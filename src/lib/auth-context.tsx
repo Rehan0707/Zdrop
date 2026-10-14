@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { getRedirectResult, signInWithPopup, signInWithRedirect, type UserCredential } from 'firebase/auth';
 import { getClientAuth, getGoogleProvider } from './firebase-client';
 import { UserProfile, ShopProfile } from './types';
 
@@ -57,6 +57,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
+  const finishGoogleSignIn = useCallback(async (result: UserCredential, redirectTo?: string) => {
+    const idToken = await result.user.getIdToken();
+    const res = await fetch('/api/auth/token-exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken }),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Failed to authenticate with server');
+    }
+    const data = await res.json();
+    setUser(data.user);
+    if (redirectTo && redirectTo !== window.location.pathname) {
+      window.location.href = redirectTo;
+    }
+  }, []);
+
+  useEffect(() => {
+    const auth = getClientAuth();
+    getRedirectResult(auth).then(async (result) => {
+      if (!result) return;
+      const redirectTo = sessionStorage.getItem('zdrop_auth_redirect') || '/';
+      sessionStorage.removeItem('zdrop_auth_redirect');
+      await finishGoogleSignIn(result, redirectTo);
+    }).catch((err) => {
+      console.error('Google redirect sign-in error:', err);
+      alert((err as Error).message || 'Google Sign-In failed. Please try again.');
+    });
+  }, [finishGoogleSignIn]);
+
   const loginWithGoogle = async (redirectTo = typeof window !== 'undefined' ? window.location.pathname : '/') => {
     setIsLoading(true);
     try {
@@ -64,35 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const provider = getGoogleProvider();
 
       const result = await signInWithPopup(auth, provider);
-      const idToken = await result.user.getIdToken();
-
-      const res = await fetch('/api/auth/token-exchange', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idToken,
-          rawUser: {
-            uid: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoURL: result.user.photoURL,
-          },
-        }),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Failed to authenticate with server');
-      }
-
-      const data = await res.json();
-      setUser(data.user);
-      if (redirectTo && typeof window !== 'undefined' && redirectTo !== window.location.pathname) {
-        window.location.href = redirectTo;
-      }
+      await finishGoogleSignIn(result, redirectTo);
     } catch (err: unknown) {
       console.error('Google sign-in error:', err);
       const firebaseError = err as { code?: string; message?: string };
+      if (firebaseError?.code === 'auth/popup-blocked') {
+        sessionStorage.setItem('zdrop_auth_redirect', redirectTo);
+        await signInWithRedirect(getClientAuth(), getGoogleProvider());
+        return;
+      }
       if (
         firebaseError?.code !== 'auth/popup-closed-by-user' &&
         firebaseError?.code !== 'auth/cancelled-popup-request'
