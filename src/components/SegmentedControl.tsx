@@ -1,66 +1,60 @@
 "use client";
-
-import { motion } from "motion/react";
-
+import { useRef } from "react";
 interface Option {
   id: string;
   label: string;
   subLabel?: string;
 }
-
 interface SegmentedControlProps {
   options: Option[];
   value: string;
   onChange: (val: string) => void;
   className?: string;
+  ariaLabel?: string;
 }
-
 export function SegmentedControl({
   options,
   value,
   onChange,
   className = "",
+  ariaLabel,
 }: SegmentedControlProps) {
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   return (
     <div
-      className={`relative flex bg-slate-100 dark:bg-[#121622] p-1 rounded-xl border border-slate-200 dark:border-white/10 transition-colors ${className}`}
+      className={`zd-segments ${className}`}
       role="radiogroup"
+      aria-label={ariaLabel}
     >
-      {options.map((option) => {
-        const isSelected = option.id === value;
-        return (
-          <button
-            key={option.id}
-            type="button"
-            role="radio"
-            aria-checked={isSelected}
-            onClick={() => onChange(option.id)}
-            className={`relative flex-1 py-2 px-3 text-xs sm:text-sm font-semibold text-center transition-colors duration-150 z-10 active:scale-[0.98] cursor-pointer rounded-lg flex flex-col items-center justify-center ${
-              isSelected
-                ? "text-blue-700 dark:text-white font-bold"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
-          >
-            <span>{option.label}</span>
-            {option.subLabel && (
-              <span
-                className={`text-[10px] font-normal ${
-                  isSelected ? "text-blue-600 dark:text-cyan-300" : "text-slate-400 dark:text-slate-500"
-                }`}
-              >
-                {option.subLabel}
-              </span>
-            )}
-            {isSelected && (
-              <motion.div
-                layoutId="segmented-pill"
-                className="absolute inset-0 bg-white dark:bg-[#1E2536] rounded-lg shadow-xs dark:shadow-sm border border-slate-200/80 dark:border-cyan-500/30 -z-10"
-                transition={{ type: "spring", stiffness: 450, damping: 35 }}
-              />
-            )}
-          </button>
-        );
-      })}
+      {options.map((option, index) => (
+        <button
+          key={option.id}
+          ref={(element) => {
+            buttons.current[index] = element;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={option.id === value}
+          tabIndex={option.id === value ? 0 : -1}
+          onClick={() => onChange(option.id)}
+          onKeyDown={(event) => {
+            let next = index;
+            if (event.key === "ArrowRight" || event.key === "ArrowDown")
+              next = (index + 1) % options.length;
+            else if (event.key === "ArrowLeft" || event.key === "ArrowUp")
+              next = (index - 1 + options.length) % options.length;
+            else if (event.key === "Home") next = 0;
+            else if (event.key === "End") next = options.length - 1;
+            else return;
+            event.preventDefault();
+            onChange(options[next].id);
+            buttons.current[next]?.focus();
+          }}
+        >
+          <span>{option.label}</span>
+          {option.subLabel && <small>{option.subLabel}</small>}
+        </button>
+      ))}
     </div>
   );
 }

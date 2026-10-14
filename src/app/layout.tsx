@@ -5,6 +5,7 @@ import { MotionConfig } from "motion/react";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 import "@/components/auth.css";
+import "@/components/print-desk.css";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],

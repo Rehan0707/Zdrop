@@ -1,5 +1,9 @@
 # ZDrop - UI/UX Design Specification
 
+> **Reference design update (2026-10-14):** The supplied print-desk screenshot is the current visual reference: warm paper (#f4f5ef), ink (#20271f), lime (#d8f36a), a full-width header, editorial hero, paper-to-printer illustration and bordered upload workbench. Shared styles are in `src/components/print-desk.css`. Mobile stacks the hero and form; dark mode remains available. Current Google sign-in and shop selection are retained: selecting files is local, and sign-in is required before submitting an upload. The original visual specification below is retained for context.
+
+> **Verification:** Typecheck and a production build passed. Existing API, file-format, lifecycle, and all eight auth/shop tests passed against an isolated local copy; auth used the existing mock provider, not live Google OAuth. Browser checks verified desktop layout, 390px/320px widths without horizontal overflow, light/dark themes, local file selection, the sign-in gate, preferences, and real upload/code generation after local development sign-in. Printer hardware and live Google OAuth were not tested in this UI change.
+
 > **Document Version:** 1.0.0  
 > **Aesthetic Foundation:** "Campus Print Flow" (Generated via Google Stitch MCP)  
 > **Skill Adherence:** `/design-taste-frontend` Anti-Slop Directives  

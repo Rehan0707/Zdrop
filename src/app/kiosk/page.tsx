@@ -14,7 +14,6 @@ import { Navbar } from "@/components/Navbar";
 import { KioskEntryView } from "@/views/KioskEntryView";
 import { KioskJobConsole } from "@/components/KioskJobConsole";
 import { Footer } from "@/components/landing/Footer";
-import { WavesShaderBackground } from "@/components/WavesShaderBackground";
 import { useAuth } from "@/lib/auth-context";
 import { ShopQrModal } from "@/components/ShopQrModal";
 
@@ -83,22 +82,10 @@ function KioskContent() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col bg-[var(--canvas)] text-[var(--text-primary)] transition-colors duration-200 overflow-x-hidden">
-      {/* Animated WebGL "Waves" Shader Background */}
-      <WavesShaderBackground />
-
-      {/* Dynamic Multi-Stop Atmospheric Gradient Background Combo */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
-
-        <div className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[1400px] h-[750px] rounded-full blur-[140px] opacity-75 dark:opacity-45 bg-gradient-to-tr from-blue-500/25 via-cyan-400/30 to-indigo-500/20 dark:from-blue-600/30 dark:via-cyan-500/25 dark:to-indigo-600/20" />
-        <div className="absolute top-[40%] -left-[200px] w-[850px] h-[850px] rounded-full blur-[160px] opacity-60 dark:opacity-25 bg-gradient-to-br from-cyan-400/25 via-blue-500/20 to-transparent dark:from-cyan-500/25 dark:via-blue-600/15 dark:to-transparent" />
-        <div className="absolute -bottom-[10%] left-1/2 -translate-x-1/2 w-[1300px] h-[650px] rounded-full blur-[150px] opacity-70 dark:opacity-35 bg-gradient-to-t from-blue-500/25 via-cyan-400/20 to-emerald-400/15 dark:from-cyan-900/35 dark:via-blue-900/25 dark:to-emerald-950/20" />
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(15,23,42,0.04)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] opacity-80" />
-      </div>
-
+    <div className="zd-app">
       <Navbar currentRole="kiosk" />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 pt-24 pb-12 sm:pt-28">
+      <main id="main-content" className="flex-1 max-w-5xl w-full mx-auto px-4 pt-10 pb-12 sm:pt-14">
         {errorMessage && session && (
           <p role="alert" className="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs text-center">
             {errorMessage}

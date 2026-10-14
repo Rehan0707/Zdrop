@@ -1,15 +1,12 @@
 "use client";
-
 import { Minus, Plus } from "lucide-react";
-
 interface NumericStepperProps {
   value: number;
-  onChange: (val: number) => void;
+  onChange: (value: number) => void;
   min?: number;
   max?: number;
   label?: string;
 }
-
 export function NumericStepper({
   value,
   onChange,
@@ -17,40 +14,28 @@ export function NumericStepper({
   max = 99,
   label = "Copies",
 }: NumericStepperProps) {
-  const handleDecrement = () => {
-    if (value > min) onChange(value - 1);
-  };
-
-  const handleIncrement = () => {
-    if (value < max) onChange(value + 1);
-  };
-
   return (
-    <div className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-[#121622]/80 transition-colors">
-      <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 font-sans">{label}</span>
-      <div className="flex items-center gap-2">
+    <div className="zd-pref-row">
+      <span>{label}</span>
+      <div className="zd-stepper">
         <button
           type="button"
-          onClick={handleDecrement}
+          onClick={() => value > min && onChange(value - 1)}
           disabled={value <= min}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1A202E] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-blue-400 dark:hover:border-cyan-500/40 disabled:opacity-30 disabled:pointer-events-none transition active:scale-[0.96] cursor-pointer shadow-2xs"
           aria-label="Decrease copies"
         >
-          <Minus className="w-3.5 h-3.5" />
+          <Minus size={15} />
         </button>
-
-        <div className="w-10 text-center font-bold text-sm sm:text-base text-slate-900 dark:text-white font-mono font-tabular">
+        <output aria-label="Copies" aria-live="polite">
           {value}
-        </div>
-
+        </output>
         <button
           type="button"
-          onClick={handleIncrement}
+          onClick={() => value < max && onChange(value + 1)}
           disabled={value >= max}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1A202E] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-blue-400 dark:hover:border-cyan-500/40 disabled:opacity-30 disabled:pointer-events-none transition active:scale-[0.96] cursor-pointer shadow-2xs"
           aria-label="Increase copies"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus size={15} />
         </button>
       </div>
     </div>

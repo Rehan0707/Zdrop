@@ -19,7 +19,6 @@ import { CtaSection } from "@/components/landing/CtaSection";
 import { Footer } from "@/components/landing/Footer";
 import { CodeView } from "@/views/CodeView";
 import { SuccessView } from "@/views/SuccessView";
-import { WavesShaderBackground } from "@/components/WavesShaderBackground";
 
 
 type StudentStep = "UPLOAD" | "CODE" | "SUCCESS";
@@ -108,32 +107,10 @@ export default function StudentPage() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col bg-[var(--canvas)] text-[var(--text-primary)] transition-colors duration-200 overflow-x-hidden">
-      {/* Animated WebGL "Waves" Shader Background */}
-      <WavesShaderBackground />
+    <div className="zd-app">
+      <Navbar currentRole="student" showSections={step === "UPLOAD"} />
 
-      {/* Dynamic Multi-Stop Atmospheric Gradient Background Combo */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
-
-        {/* Upper Celestial Aurora (Electric Blue, Radiant Cyan & Celestial Indigo) */}
-        <div className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[1400px] h-[750px] rounded-full blur-[140px] opacity-75 dark:opacity-45 bg-gradient-to-tr from-blue-500/25 via-cyan-400/30 to-indigo-500/20 dark:from-blue-600/30 dark:via-cyan-500/25 dark:to-indigo-600/20" />
-
-        {/* Mid-Left Atmospheric Bloom (Luminous Azure / Deep Sapphire) */}
-        <div className="absolute top-[35%] -left-[200px] w-[850px] h-[850px] rounded-full blur-[160px] opacity-60 dark:opacity-25 bg-gradient-to-br from-cyan-400/25 via-blue-500/20 to-transparent dark:from-cyan-500/25 dark:via-blue-600/15 dark:to-transparent" />
-
-        {/* Mid-Right Accent Bloom (Ultra Indigo / Violet Depth) */}
-        <div className="absolute top-[55%] -right-[220px] w-[850px] h-[850px] rounded-full blur-[160px] opacity-55 dark:opacity-25 bg-gradient-to-bl from-indigo-500/20 via-blue-600/15 to-transparent dark:from-indigo-600/25 dark:via-cyan-600/15 dark:to-transparent" />
-
-        {/* Bottom Horizon Bloom (Cyan & Emerald Zero-Trace Security Aura) */}
-        <div className="absolute -bottom-[10%] left-1/2 -translate-x-1/2 w-[1300px] h-[650px] rounded-full blur-[150px] opacity-70 dark:opacity-35 bg-gradient-to-t from-blue-500/25 via-cyan-400/20 to-emerald-400/15 dark:from-cyan-900/35 dark:via-blue-900/25 dark:to-emerald-950/20" />
-
-        {/* Subtle Technical Dot Matrix Overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(15,23,42,0.04)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] opacity-80" />
-      </div>
-
-      <Navbar currentRole="student" />
-
-      <main className="flex-1 pt-20 sm:pt-24">
+      <main id="main-content" className="zd-main">
         {error && (
           <div className="max-w-md mx-auto my-4 px-4">
             <p
