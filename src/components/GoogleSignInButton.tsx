@@ -21,9 +21,13 @@ export function GoogleSignInButton({
   const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState(false);
 
-  const handleClick = () => {
+  const handleClick = async () => {
     setLoading(true);
-    loginWithGoogle(redirectTo);
+    try {
+      await loginWithGoogle(redirectTo);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDevClick = async () => {

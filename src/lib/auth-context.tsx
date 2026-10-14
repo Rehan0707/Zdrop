@@ -17,7 +17,7 @@ interface AuthContextType {
   user: UserProfile | null;
   shop: ShopProfile | null;
   isLoading: boolean;
-  loginWithGoogle: (redirectTo?: string) => void;
+  loginWithGoogle: (redirectTo?: string) => Promise<void>;
   loginWithDevMock: (name?: string, email?: string) => Promise<void>;
   loginShopOwner: (email: string, password: string) => Promise<void>;
   registerShopOwner: (data: RegisterShopData) => Promise<void>;
@@ -55,8 +55,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refresh();
   }, [refresh]);
 
-  const loginWithGoogle = (redirectTo = window.location.pathname) => {
-    window.location.href = `/api/auth/google?redirect=${encodeURIComponent(redirectTo)}`;
+  const loginWithGoogle = async (redirectTo = typeof window !== 'undefined' ? window.location.pathname : '/') => {
+    setIsLoading(true);
+    try {
+      const { signInWithPopup } = await import('firebase/auth');
+      const { getClientAuth, getGoogleProvider } = await import('./firebase-client');
+
+      const auth = getClientAuth();
+      const provider = getGoogleProvider();
+
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      const res = await fetch('/api/auth/token-exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idToken,
+          rawUser: {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to authenticate with server');
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      if (redirectTo && typeof window !== 'undefined' && redirectTo !== window.location.pathname) {
+        window.location.href = redirectTo;
+      }
+    } catch (err: unknown) {
+      console.error('Google sign-in error:', err);
+      const firebaseError = err as { code?: string; message?: string };
+      if (
+        firebaseError?.code !== 'auth/popup-closed-by-user' &&
+        firebaseError?.code !== 'auth/cancelled-popup-request'
+      ) {
+        alert(firebaseError?.message || 'Google Sign-In failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loginWithDevMock = async (name?: string, email?: string) => {

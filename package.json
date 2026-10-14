@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/smoke-test.mjs && node scripts/formats-test.mjs && node scripts/edge-test.mjs && node scripts/auth-test.mjs",
-    "test:auth": "node scripts/auth-test.mjs",
+    "test": "node scripts/smoke-test.mjs && node scripts/formats-test.mjs && node scripts/edge-test.mjs && node scripts/auth-test.mjs && node scripts/google-token-test.mjs",
+    "test:auth": "node scripts/auth-test.mjs && node scripts/google-token-test.mjs",
     "test:api": "node scripts/smoke-test.mjs",
     "test:edge": "node scripts/edge-test.mjs",
     "test:formats": "node scripts/formats-test.mjs"

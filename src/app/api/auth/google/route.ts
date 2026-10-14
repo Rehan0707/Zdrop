@@ -6,11 +6,9 @@ export async function GET(request: NextRequest) {
   const origin = request.nextUrl.origin;
   const redirectParam = request.nextUrl.searchParams.get('redirect') || '/';
 
-  // Construct OAuth callback target
-  const callbackUrl = `${origin}/api/auth/callback?redirect=${encodeURIComponent(redirectParam)}`;
+  // Redirect to application target with auth=google parameter
+  const target = new URL(redirectParam, origin);
+  target.searchParams.set('auth', 'google');
 
-  // Redirect to Supabase Google OAuth endpoint
-  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(callbackUrl)}`;
-
-  return NextResponse.redirect(authUrl);
+  return NextResponse.redirect(target);
 }

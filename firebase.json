@@ -1,1 +1,26 @@
-{"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"storage":{"rules":"storage.rules"}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "auth": {
+    "authorizedDomains": [
+      "localhost",
+      "zdropv1.vercel.app",
+      "zdrop-print-20261009.firebaseapp.com"
+    ],
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "ZDrop",
+        "supportEmail": "rehansanadi007@gmail.com",
+        "authorizedRedirectUris": [
+          "https://zdropv1.vercel.app",
+          "http://localhost"
+        ]
+      }
+    }
+  }
+}
