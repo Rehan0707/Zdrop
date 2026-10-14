@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "ZDROP_NEXT_DIST_DIR=.next-build next build",
-    "start": "ZDROP_NEXT_DIST_DIR=.next-build next start",
+    "build": "next build",
+    "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/smoke-test.mjs && node scripts/formats-test.mjs && node scripts/edge-test.mjs && node scripts/auth-test.mjs && node scripts/google-token-test.mjs",
