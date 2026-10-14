@@ -1,18 +1,27 @@
 "use client";
 import { useId } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { PrintPreferences } from "@/lib/types";
+import { PrintPreferences, FileMetadata, ShopPricing } from "@/lib/types";
 import { NumericStepper } from "./NumericStepper";
 import { SegmentedControl } from "./SegmentedControl";
+import { LiveCostEstimator } from "./LiveCostEstimator";
+
 interface PrintPreferencesCardProps {
   preferences: PrintPreferences;
   onChange: (prefs: PrintPreferences) => void;
   disabled?: boolean;
+  files?: FileMetadata[];
+  shopPricing?: ShopPricing | null;
+  shopName?: string;
 }
+
 export function PrintPreferencesCard({
   preferences,
   onChange,
   disabled = false,
+  files,
+  shopPricing,
+  shopName,
 }: PrintPreferencesCardProps) {
   const id = useId();
   const update = <K extends keyof PrintPreferences>(
@@ -97,6 +106,15 @@ export function PrintPreferencesCard({
           onChange={(event) => update("customerNotes", event.target.value)}
         />
       </div>
+
+      {files && files.length > 0 && (
+        <LiveCostEstimator
+          files={files}
+          preferences={preferences}
+          shopPricing={shopPricing}
+          shopName={shopName}
+        />
+      )}
     </fieldset>
   );
 }

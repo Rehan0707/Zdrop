@@ -48,6 +48,25 @@ export interface UserProfile {
   createdAt?: number;
 }
 
+export interface ShopPricing {
+  bwRate: number;              // Rate per page for B&W (e.g. 2 for ₹2)
+  colorRate: number;           // Rate per page for Color (e.g. 10 for ₹10)
+  duplexDiscount: number;      // Discount per sheet if printed double-sided (default 0)
+  currencySymbol: string;      // e.g. "₹", "$", "€", "£"
+  upiId?: string;              // Shop UPI VPA for digital payments (e.g. "xerox@upi")
+}
+
+export interface CostEstimate {
+  totalPages: number;
+  copies: number;
+  ratePerPage: number;
+  subtotal: number;
+  discount: number;
+  totalAmount: number;
+  currencySymbol: string;
+  formula: string;
+}
+
 export interface ShopProfile {
   id: string;
   ownerId: string;
@@ -59,7 +78,11 @@ export interface ShopProfile {
   shopCode: string;
   createdAt: number;
   isActive: boolean;
+  pricing?: ShopPricing;
 }
+
+export type PaymentStatus = "UNPAID" | "PAID_ONLINE" | "PAID_COUNTER";
+export type PaymentMethod = "UPI" | "CASH" | "COUNTER";
 
 export interface SessionData {
   id: string;
@@ -80,4 +103,9 @@ export interface SessionData {
   shopId?: string;
   shopName?: string;
   operatorId?: string;
+  costEstimate?: CostEstimate;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
+  paymentTimestamp?: number;
 }
+

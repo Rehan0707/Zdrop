@@ -225,6 +225,9 @@ export function HeroSection({
                   preferences={preferences}
                   onChange={setPreferences}
                   disabled={isGenerating}
+                  files={files}
+                  shopPricing={shops.find((s) => s.id === selectedShopId)?.pricing}
+                  shopName={shops.find((s) => s.id === selectedShopId)?.shopName}
                 />
               </>
             )}

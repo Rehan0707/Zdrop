@@ -116,6 +116,19 @@ export async function deleteSession(id: string): Promise<SessionData> {
   return result.session;
 }
 
+export async function updateSessionPayment(
+  id: string,
+  paymentStatus: "PAID_ONLINE" | "PAID_COUNTER" | "UNPAID",
+  paymentMethod: "UPI" | "CASH" | "COUNTER" = "COUNTER"
+): Promise<SessionData> {
+  const result = await request('/api/sessions/payment', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tokens.get(id)}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId: id, paymentStatus, paymentMethod }),
+  });
+  return result.session;
+}
+
 export async function restoreSession(): Promise<SessionData | null> {
   const raw = sessionStorage.getItem('zdrop-session');
   if (!raw) return null;

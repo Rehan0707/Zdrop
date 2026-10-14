@@ -65,6 +65,7 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
               preferences={preferences}
               onChange={setPreferences}
               disabled={isGenerating}
+              files={files}
             />
           </div>
         )}

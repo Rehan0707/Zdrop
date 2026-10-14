@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Store, QrCode } from "lucide-react";
+import { Store, QrCode, BadgePercent } from "lucide-react";
 import { SessionData } from "@/lib/types";
 import {
   resolveByAccessCode,
@@ -16,6 +16,7 @@ import { KioskJobConsole } from "@/components/KioskJobConsole";
 import { Footer } from "@/components/landing/Footer";
 import { useAuth } from "@/lib/auth-context";
 import { ShopQrModal } from "@/components/ShopQrModal";
+import { ShopPricingModal } from "@/components/ShopPricingModal";
 
 function KioskContent() {
   const { shop } = useAuth();
@@ -26,6 +27,7 @@ function KioskContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   // Auto-resolve code from URL query parameter (from QR code scan)
   useEffect(() => {
@@ -111,14 +113,25 @@ function KioskContent() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowQrModal(true)}
-                className="zd-button zd-button--secondary"
-              >
-                <QrCode size={16} />
-                <span>Counter QR Standee</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowPricingModal(true)}
+                  className="zd-button zd-button--secondary"
+                >
+                  <BadgePercent size={16} />
+                  <span>Rates & UPI Setup</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="zd-button zd-button--secondary"
+                >
+                  <QrCode size={16} />
+                  <span>Counter QR Standee</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -174,6 +187,19 @@ function KioskContent() {
           shop={shop}
           isOpen={showQrModal}
           onClose={() => setShowQrModal(false)}
+        />
+      )}
+
+      {/* Shop Rates & UPI Counter Pricing Modal */}
+      {shop && (
+        <ShopPricingModal
+          shop={shop}
+          isOpen={showPricingModal}
+          onClose={() => setShowPricingModal(false)}
+          onSaved={() => {
+            setSuccessToast("Pricing rates and UPI setup saved successfully!");
+            setTimeout(() => setSuccessToast(null), 3500);
+          }}
         />
       )}
     </div>

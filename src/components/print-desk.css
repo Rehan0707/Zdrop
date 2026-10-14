@@ -2463,3 +2463,561 @@ textarea,
   }
 }
 
+/* ==========================================================================
+   PRICING CALCULATOR & MICRO-PAYMENTS STYLES
+   ========================================================================== */
+
+/* 1. Live Cost Estimator Card (in DropZone / Print Setup) */
+.zd-cost-estimator-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.zd-cost-estimator-card:hover {
+  border-color: rgba(0, 186, 87, 0.35);
+}
+
+.zd-cost-estimator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.zd-cost-estimator-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.zd-cost-estimator-title svg {
+  color: #00ba57;
+}
+
+.zd-cost-shop-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(0, 186, 87, 0.09);
+  color: #00ba57;
+  border: 1px solid rgba(0, 186, 87, 0.2);
+}
+
+.zd-cost-estimator-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.zd-cost-total-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.zd-cost-currency {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #00ba57;
+}
+
+.zd-cost-amount {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.zd-cost-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: 6px;
+}
+
+.zd-cost-formula-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.zd-cost-formula {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains), monospace;
+  margin: 0;
+}
+
+.zd-cost-discount-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+
+.zd-cost-estimator-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.zd-cost-estimator-footer svg {
+  color: #00ba57;
+  flex-shrink: 0;
+}
+
+/* 2. Payment Settlement Card (in CodeView) */
+.zd-payment-card {
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 20px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+  margin-bottom: 20px;
+}
+
+.zd-payment-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.zd-payment-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zd-payment-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(0, 186, 87, 0.1);
+  color: #00ba57;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.zd-payment-title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.zd-payment-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.zd-payment-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.zd-payment-status-pill--paid {
+  background: rgba(0, 186, 87, 0.12);
+  color: #00ba57;
+  border: 1px solid rgba(0, 186, 87, 0.28);
+}
+
+.zd-payment-status-pill--pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.zd-payment-amount-box {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  margin-bottom: 18px;
+}
+
+.zd-payment-amount-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.zd-payment-currency {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #00ba57;
+}
+
+.zd-payment-amount {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.zd-payment-breakdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.zd-payment-breakdown-toggle:hover {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.zd-payment-formula-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains), monospace;
+  margin: 0;
+}
+
+.zd-payment-itemized-list {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.zd-payment-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+.zd-payment-item-row strong {
+  color: var(--text-primary);
+}
+
+.zd-discount-text strong {
+  color: #059669;
+}
+
+.zd-total-row {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.zd-total-row strong {
+  color: #00ba57;
+  font-size: 14px;
+}
+
+/* Tabs */
+.zd-payment-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.zd-payment-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.zd-payment-tab:hover {
+  color: var(--text-primary);
+  border-color: rgba(0, 186, 87, 0.3);
+}
+
+.zd-payment-tab.active {
+  background: var(--surface);
+  border-color: #00ba57;
+  color: #00ba57;
+  box-shadow: 0 2px 8px rgba(0, 186, 87, 0.12);
+}
+
+/* UPI Section */
+.zd-upi-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.zd-upi-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-upi-qr-frame {
+  width: 180px;
+  height: 180px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  display: grid;
+  place-items: center;
+}
+
+.zd-upi-qr-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.zd-upi-instruction {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+}
+
+.zd-upi-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.zd-upi-app-btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.zd-upi-confirm-btn {
+  width: 100%;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.zd-counter-pay-box {
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.zd-counter-pay-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zd-counter-pay-info h4 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+}
+
+.zd-counter-pay-info p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.zd-payment-verified-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(0, 186, 87, 0.08);
+  border: 1px solid rgba(0, 186, 87, 0.2);
+  font-size: 12.5px;
+  color: var(--text-primary);
+}
+
+/* 3. Kiosk Counter Billing Card */
+.zd-kiosk-billing-card {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+
+.zd-kiosk-billing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.zd-kiosk-billing-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.zd-kiosk-billing-title svg {
+  color: #00ba57;
+}
+
+.zd-kiosk-billing-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zd-kiosk-billing-amount-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zd-kiosk-billing-currency {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #00ba57;
+}
+
+.zd-kiosk-billing-amount {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.zd-kiosk-billing-calc {
+  font-size: 11.5px;
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--text-secondary);
+}
+
+.zd-kiosk-billing-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 4. Shop Pricing Modal Styles */
+.zd-pricing-modal-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.zd-pricing-modal-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.zd-pricing-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.zd-input-prefix-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.zd-input-prefix {
+  position: absolute;
+  left: 12px;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.zd-input--prefixed {
+  padding-left: 28px !important;
+}
+
+.zd-pricing-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+

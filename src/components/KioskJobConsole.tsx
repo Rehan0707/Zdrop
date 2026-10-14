@@ -14,12 +14,18 @@ import {
   ShieldAlert,
   Lock,
   X,
+  Receipt,
+  CheckCircle2,
+  Clock,
+  Banknote,
 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { SessionData, FileMetadata } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { SecureDocumentPreview } from "./SecureDocumentPreview";
 import { useScreenshotProtection } from "@/lib/useScreenshotProtection";
+import { calculatePrintCost } from "@/lib/pricing";
+import { updateSessionPayment } from "@/lib/session-client";
 
 interface KioskJobConsoleProps {
   session: SessionData;
@@ -43,7 +49,27 @@ export function KioskJobConsole({
   const previewRef = useRef<HTMLIFrameElement>(null);
   const imagePrintRef = useRef<HTMLIFrameElement>(null);
   const [confirmPurge, setConfirmPurge] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(
+    session.paymentStatus || "UNPAID"
+  );
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const { preferences } = session;
+
+  const estimate =
+    session.costEstimate ||
+    calculatePrintCost(session.files, session.preferences);
+
+  const handleMarkPayment = async (status: "PAID_COUNTER" | "UNPAID") => {
+    setIsUpdatingPayment(true);
+    try {
+      await updateSessionPayment(session.id, status, "CASH");
+      setPaymentStatus(status);
+    } catch (e) {
+      console.error("Failed to update counter payment:", e);
+    } finally {
+      setIsUpdatingPayment(false);
+    }
+  };
 
   // Anti-Screenshot and Anti-Download Hook
   const { isShielded, securityAlert, clearAlert, unshieldManually } =
@@ -220,6 +246,69 @@ export function KioskJobConsole({
               </div>
             </div>
           )}
+
+          {/* Billing & Settlement Ledger Card */}
+          <div className="zd-kiosk-billing-card">
+            <div className="zd-kiosk-billing-header">
+              <div className="zd-kiosk-billing-title">
+                <Receipt size={17} />
+                <span>Counter Billing & Settlement</span>
+              </div>
+              {paymentStatus === "PAID_ONLINE" ? (
+                <span className="zd-payment-status-pill zd-payment-status-pill--paid">
+                  <CheckCircle2 size={13} />
+                  <span>Paid via UPI Online</span>
+                </span>
+              ) : paymentStatus === "PAID_COUNTER" ? (
+                <span className="zd-payment-status-pill zd-payment-status-pill--paid">
+                  <CheckCircle2 size={13} />
+                  <span>Cash Collected at Counter</span>
+                </span>
+              ) : (
+                <span className="zd-payment-status-pill zd-payment-status-pill--pending">
+                  <Clock size={13} />
+                  <span>Payment Due: {estimate.currencySymbol}{estimate.totalAmount.toFixed(2)}</span>
+                </span>
+              )}
+            </div>
+
+            <div className="zd-kiosk-billing-body">
+              <div className="zd-kiosk-billing-amount-wrap">
+                <div className="flex items-baseline gap-1">
+                  <span className="zd-kiosk-billing-currency">{estimate.currencySymbol}</span>
+                  <span className="zd-kiosk-billing-amount">{estimate.totalAmount.toFixed(2)}</span>
+                </div>
+                <span className="zd-kiosk-billing-calc">{estimate.formula}</span>
+              </div>
+
+              <div className="zd-kiosk-billing-actions">
+                {paymentStatus !== "PAID_ONLINE" && (
+                  paymentStatus === "PAID_COUNTER" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkPayment("UNPAID")}
+                      disabled={isUpdatingPayment}
+                      className="zd-button zd-button--secondary"
+                      style={{ fontSize: "12px", minHeight: "36px", padding: "6px 14px" }}
+                    >
+                      <span>Mark as Unpaid</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkPayment("PAID_COUNTER")}
+                      disabled={isUpdatingPayment}
+                      className="zd-button zd-button--primary"
+                      style={{ fontSize: "12px", minHeight: "36px", padding: "6px 16px", background: "#059669" }}
+                    >
+                      <CheckCircle2 size={15} />
+                      <span>Mark Cash Collected ({estimate.currencySymbol}{estimate.totalAmount.toFixed(2)})</span>
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Document Selection Tabs & Preview */}

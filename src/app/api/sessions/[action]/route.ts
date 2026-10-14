@@ -42,6 +42,17 @@ async function handle(req: NextRequest, action: string) {
         shopId: input.shopId,
         shopName: input.shopName,
       };
+
+      try {
+        const { calculatePrintCost } = await import('@/lib/pricing');
+        const { getShopById } = await import('@/lib/server/shops-store');
+        const shop = input.shopId ? await getShopById(input.shopId) : null;
+        s.costEstimate = calculatePrintCost(s.files, s.preferences, shop?.pricing);
+        s.paymentStatus = 'UNPAID';
+      } catch (err) {
+        console.warn('Cost estimation init error:', err);
+      }
+
       s.uploadSlots = Object.fromEntries(s.files.map(f => [f.fileId, { size: f.size, type: f.type }]));
       s.purging = false; s.uploadSealed = false;
       const upload = await cloudUpload(s);
@@ -93,8 +104,20 @@ async function handle(req: NextRequest, action: string) {
       s.uploadSealed = true; await saveSession(s); // Seal direct uploads before inspecting immutable contents.
       try {
         for (const f of s.files) { if (isCloud) await enforceFileNoStore(s.id, f.fileId); const bytes = await getFile(s.id, f.fileId); if (bytes.length !== f.size) throw new DocumentError('Upload incomplete or file size mismatch.'); const pages = await inspectDocument(bytes, f.type); if (pages) f.pageCount = pages; }
+        // Update accurate cost estimate now that page counts are verified
+        const { calculatePrintCost } = await import('@/lib/pricing');
+        const { getShopById } = await import('@/lib/server/shops-store');
+        const shop = s.shopId ? await getShopById(s.shopId) : null;
+        s.costEstimate = calculatePrintCost(s.files, s.preferences, shop?.pricing);
       } catch (error) { await purge(s, 'STUDENT_REVOKE'); throw error; }
       await activateSession(s); return reply({ session: publicSession(s) });
+    }
+    if (action === 'payment' && req.method === 'POST') {
+      s.paymentStatus = input.paymentStatus || 'PAID_COUNTER';
+      s.paymentMethod = input.paymentMethod || 'COUNTER';
+      s.paymentTimestamp = Date.now();
+      await saveSession(s);
+      return reply({ session: publicSession(s, token === s.operatorToken ? token : undefined) });
     }
     if (action === 'delete' && req.method === 'POST') {
       const source = token === s.ownerToken ? 'STUDENT_REVOKE' : 'OPERATOR_PRINT';

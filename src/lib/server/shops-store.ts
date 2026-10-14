@@ -120,3 +120,33 @@ export async function listShops(): Promise<ShopProfile[]> {
   const shops = await readLocalShops();
   return Object.values(shops).filter(s => s.isActive);
 }
+
+export async function updateShopPricing(
+  shopId: string,
+  pricing: Partial<import('../types').ShopPricing>
+): Promise<ShopProfile> {
+  const shops = await readLocalShops();
+  const shop = shops[shopId];
+  if (!shop) throw new Error('Shop not found.');
+
+  shop.pricing = {
+    bwRate: Math.max(0.1, Number(pricing.bwRate) || 2),
+    colorRate: Math.max(0.1, Number(pricing.colorRate) || 10),
+    duplexDiscount: Math.max(0, Number(pricing.duplexDiscount) || 0),
+    currencySymbol: pricing.currencySymbol?.trim() || '₹',
+    upiId: pricing.upiId?.trim() || '',
+  };
+
+  shops[shopId] = shop;
+  await writeLocalShops(shops);
+
+  if (isCloud) {
+    try {
+      await metadataRpc('zdrop_update_shop_pricing', { p_shop_id: shopId, p_pricing: shop.pricing });
+    } catch (err) {
+      console.warn('Supabase zdrop_update_shop_pricing fallback to local:', err);
+    }
+  }
+
+  return shop;
+}

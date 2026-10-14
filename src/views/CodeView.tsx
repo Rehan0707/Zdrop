@@ -6,6 +6,7 @@ import { SessionData } from "@/lib/types";
 import { OtpDisplayCard } from "@/components/OtpDisplayCard";
 import { LiveStatusTracker } from "@/components/LiveStatusTracker";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { PaymentSettlementCard } from "@/components/PaymentSettlementCard";
 import { formatBytes } from "@/lib/utils";
 
 interface CodeViewProps {
@@ -48,6 +49,9 @@ export function CodeView({
         onRevoke={() => setIsConfirmOpen(true)}
         isRevoking={isRevoking}
       />
+
+      {/* Auto-Calculated Cost & Micro-Payment Settlement */}
+      <PaymentSettlementCard session={session} />
 
       {/* Live Status Progression */}
       <LiveStatusTracker status={session.status} />
