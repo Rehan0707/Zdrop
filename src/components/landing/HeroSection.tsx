@@ -21,6 +21,7 @@ import { DropZone } from "@/components/DropZone";
 import { PrintPreferencesCard } from "@/components/PrintPreferencesCard";
 import { useAuth } from "@/lib/auth-context";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { ZDropStickerMark } from "@/components/ZDropLogo";
 
 interface HeroSectionProps {
   onGenerateCode: (
@@ -123,7 +124,7 @@ export function HeroSection({
           <div className="zd-handoff" aria-hidden="true">
             <div className="zd-paper-stack">
               <div className="zd-paper-sheet">
-                <FileText size={26} strokeWidth={1.5} />
+                <ZDropStickerMark width={32} height={35} />
                 <strong>Ready to print.</strong>
                 <i />
                 <i />

@@ -219,7 +219,8 @@ export async function active(s: StoredSession) {
 }
 
 export function publicSession(s: StoredSession, token?: string): SessionData {
-  const { ownerToken, operatorToken, purging, purgeSource, uploadSlots, uploadSealed, ...result } = s;
+  const { ownerToken, operatorToken, purging, purgeSource, uploadSlots, uploadSealed,
+    userId, userEmail, userName, userAvatar, ...result } = s;
   return {
     ...result,
     files: result.files.map((f) => ({

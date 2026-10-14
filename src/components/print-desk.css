@@ -192,24 +192,34 @@ textarea,
 .zd-logo {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
-.zd-logo-mark {
-  width: 34px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  background: var(--primary);
-  color: var(--primary-ink);
-  border: 1px solid var(--primary-ink);
-  border-radius: 5px 12px 5px 5px;
+.zd-logo-sticker-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.zd-logo:hover .zd-logo-sticker-wrap {
+  transform: translateY(-2px) rotate(-3.5deg) scale(1.06);
+}
+.zd-logo:active .zd-logo-sticker-wrap {
+  transform: translateY(0) scale(0.96);
 }
 .zd-logo-word {
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.05em;
+  color: var(--text-primary);
+}
+.zd-logo-dot {
+  color: #00ba57;
 }
 .zd-logo--sm .zd-logo-word {
   font-size: 20px;
@@ -218,7 +228,7 @@ textarea,
   font-size: 30px;
 }
 .zd-logo--xl .zd-logo-word {
-  font-size: 36px;
+  font-size: 38px;
 }
 .zd-nav-links {
   display: flex;
@@ -1928,6 +1938,7 @@ textarea,
     border-color: transparent;
     background: transparent;
   }
+  .zd-logo-sticker-wrap,
   .zd-logo-mark {
     width: 27px;
     height: 32px;
@@ -1992,6 +2003,7 @@ textarea,
   .zd-logo-word {
     font-size: 19px;
   }
+  .zd-logo-sticker-wrap,
   .zd-logo-mark {
     width: 25px;
     height: 30px;

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { ShopProfile } from '@/lib/types';
 import { Printer, X, Download, ShieldCheck, Sparkles } from 'lucide-react';
+import { ZDropLogo } from './ZDropLogo';
 
 interface ShopQrModalProps {
   shop: ShopProfile;
@@ -59,7 +60,9 @@ export function ShopQrModal({ shop, isOpen, onClose }: ShopQrModalProps) {
         {/* Printable Poster Container */}
         <div className="zd-shop-poster" id="printable-shop-poster">
           <div className="zd-poster-header">
-            <div className="zd-poster-brand">ZDrop</div>
+            <div className="zd-poster-brand">
+              <ZDropLogo size="lg" />
+            </div>
             <div className="zd-poster-shop-name">{shop.shopName}</div>
             <div className="zd-poster-shop-location">{shop.campusAddress}</div>
           </div>

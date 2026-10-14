@@ -6,7 +6,14 @@ import { UserProfile } from '../types';
 import { getShopByOwnerId } from './shops-store';
 
 const AUTH_COOKIE_NAME = 'zdrop_auth';
-const AUTH_SECRET = process.env.SUPABASE_SECRET_KEY || process.env.RATE_LIMIT_SECRET || 'zdrop-auth-secure-secret-key-32chars';
+const AUTH_SECRET = process.env.ZDROP_AUTH_SECRET || process.env.SUPABASE_SECRET_KEY || process.env.RATE_LIMIT_SECRET || (process.env.NODE_ENV !== 'production' ? 'zdrop-auth-secure-secret-key-32chars' : '');
+
+function authSecret(): string {
+  if (!AUTH_SECRET) {
+    throw new Error('ZDROP_AUTH_SECRET must be configured before issuing or verifying sessions');
+  }
+  return AUTH_SECRET;
+}
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrxqpmsimbimoxgmdpel.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
@@ -21,7 +28,7 @@ export function signToken(user: UserProfile, maxAgeMs = 7 * 24 * 60 * 60 * 1000)
     exp: Date.now() + maxAgeMs,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = createHmac('sha256', AUTH_SECRET).update(body).digest('base64url');
+  const signature = createHmac('sha256', authSecret()).update(body).digest('base64url');
   return `${body}.${signature}`;
 }
 
@@ -29,7 +36,7 @@ export function verifyToken(token: string): UserProfile | null {
   try {
     const [body, signature] = token.split('.');
     if (!body || !signature) return null;
-    const expected = createHmac('sha256', AUTH_SECRET).update(body).digest('base64url');
+    const expected = createHmac('sha256', authSecret()).update(body).digest('base64url');
     if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
 
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
