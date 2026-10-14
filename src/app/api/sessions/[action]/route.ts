@@ -124,7 +124,7 @@ async function dispatch(req: NextRequest, action: string) {
       const session = await readSession(id);
       if (!session || !token || (token !== session.ownerToken && token !== session.operatorToken)) return reply({ error: 'Session access denied.' }, 403);
     }
-    return id ? await withSessionLock(id, () => handle(req, action)) : await handle(req, action);
+    return (id && action !== 'status') ? await withSessionLock(id, () => handle(req, action)) : await handle(req, action);
   } catch (err) {
     console.error(`[dispatch error ${action}]:`, err);
     return reply({ error: 'Session is busy. Please retry.' }, 409);

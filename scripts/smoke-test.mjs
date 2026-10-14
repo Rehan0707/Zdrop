@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
 const origin = process.env.ZDROP_TEST_URL || 'http://localhost:3000';
+try {
+  await fetch(`${origin}/api/auth/me`);
+} catch {
+  console.error(`\n❌ Error: ZDrop server is not reachable at ${origin}.`);
+  console.error(`Please ensure the server is running (e.g. 'npm run dev' or 'npm start') before running tests, or set ZDROP_TEST_URL.\n`);
+  process.exit(1);
+}
 const pdf = Buffer.from('%PDF-1.4\n1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj\n3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources <<>>>> endobj\ntrailer <</Root 1 0 R>>\n%%EOF');
 async function call(action, { method = 'POST', token, body, query = '', status = 200 } = {}) {
   const r = await fetch(`${origin}/api/sessions/${action}${query}`, { method, headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body && !Buffer.isBuffer(body) ? { 'Content-Type': 'application/json' } : {}) }, body: body ? Buffer.isBuffer(body) ? body : JSON.stringify(body) : undefined });
