@@ -1,0 +1,6 @@
+.zdrop-data
+.playwright-cli
+output/
+docs/
+scripts/
+supabase/

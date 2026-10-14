@@ -34,3 +34,5 @@ yarn-error.log*
 *.tsbuildinfo
 
 .zdrop-data/
+.playwright-cli/
+output/

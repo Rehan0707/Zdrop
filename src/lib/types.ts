@@ -38,6 +38,29 @@ export type SessionStatus =
   | "DELETED"
   | "EXPIRED";
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  avatarUrl?: string;
+  role: "user" | "shop_owner";
+  shopId?: string;
+  createdAt?: number;
+}
+
+export interface ShopProfile {
+  id: string;
+  ownerId: string;
+  ownerEmail: string;
+  shopName: string;
+  ownerName: string;
+  phone: string;
+  campusAddress: string;
+  shopCode: string;
+  createdAt: number;
+  isActive: boolean;
+}
+
 export interface SessionData {
   id: string;
   accessCode: string;
@@ -50,4 +73,11 @@ export interface SessionData {
   preferences: PrintPreferences;
   files: FileMetadata[];
   totalSizeBytes: number;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+  userAvatar?: string;
+  shopId?: string;
+  shopName?: string;
+  operatorId?: string;
 }

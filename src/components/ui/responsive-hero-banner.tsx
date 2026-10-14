@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowUpRight, ArrowRight, Play, Menu, X, Printer } from "lucide-react";
 import { useLenis } from "lenis/react";
 import { ZDropLogo } from "@/components/ZDropLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { RoleToggleSwitch } from "@/components/RoleToggleSwitch";
+import { useAuth } from "@/lib/auth-context";
+import { ShopAuthModal } from "@/components/ShopAuthModal";
 
 interface NavLink {
   label: string;
@@ -93,9 +95,24 @@ const ResponsiveHeroBanner: React.FC<ResponsiveHeroBannerProps> = ({
   ],
   children,
 }) => {
+  const { user, logout, loginWithGoogle } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [shopModalOpen, setShopModalOpen] = useState(false);
+  const [shopModalTab, setShopModalTab] = useState<"login" | "register">("login");
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHref, setActiveHref] = useState("#");
   const lenis = useLenis();
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Scrollspy to automatically reflect current section in navbar
   useEffect(() => {
@@ -194,11 +211,111 @@ const ResponsiveHeroBanner: React.FC<ResponsiveHeroBannerProps> = ({
                 <RoleToggleSwitch activeRole="upload" size="sm" className="ml-1" />
               </nav>
 
+              {/* User Profile / Google Sign-In */}
+              {user ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="inline-flex items-center gap-2 py-1 px-2.5 rounded-full bg-zinc-100 dark:bg-white/10 ring-1 ring-zinc-200 dark:ring-white/15 text-xs font-semibold text-zinc-800 dark:text-zinc-100 cursor-pointer"
+                  >
+                    {user.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatarUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+                    ) : (
+                      <span className="w-5 h-5 rounded-full bg-emerald-500 text-zinc-950 flex items-center justify-center text-[10px] font-bold font-mono">
+                        {(user.name?.[0] || user.email[0]).toUpperCase()}
+                      </span>
+                    )}
+                    <span>{user.name?.split(" ")[0] || "Account"}</span>
+                  </button>
+
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-xl p-2 z-50 text-left">
+                      <div className="px-3 py-2 border-b border-zinc-100 dark:border-zinc-800">
+                        <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">{user.name || "User"}</p>
+                        <p className="text-[11px] text-zinc-500 truncate">{user.email}</p>
+                        <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                          {user.role === "shop_owner" ? "🏪 Shop Owner" : "👤 Google User"}
+                        </span>
+                      </div>
+                      <div className="py-1">
+                        {user.role === "shop_owner" ? (
+                          <Link
+                            href="/kiosk"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Open Print Kiosk</span>
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              setShopModalTab("register");
+                              setShopModalOpen(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-left cursor-pointer"
+                          >
+                            <Printer className="w-3.5 h-3.5" />
+                            <span>Register Print Shop</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setUserMenuOpen(false);
+                            await logout();
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg text-left cursor-pointer"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => loginWithGoogle()}
+                  className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.43 7.33 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.16 0 9.98 0 12c0 2.02.45 3.84 1.24 5.42l4.04-3.15z" />
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.57 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
+                  </svg>
+                  <span>Sign In</span>
+                </button>
+              )}
+
               {/* Theme Toggle Button */}
               <ThemeToggle />
             </div>
 
             <div className="flex md:hidden items-center gap-2">
+              {user ? (
+                <button
+                  type="button"
+                  onClick={async () => await logout()}
+                  className="text-xs text-rose-500 font-semibold"
+                >
+                  Logout
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => loginWithGoogle()}
+                  className="text-xs font-semibold px-2 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 rounded-full"
+                >
+                  Sign In
+                </button>
+              )}
               <ThemeToggle />
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -346,6 +463,12 @@ const ResponsiveHeroBanner: React.FC<ResponsiveHeroBannerProps> = ({
         </div>
       </div>
     </section>
+
+      <ShopAuthModal
+        isOpen={shopModalOpen}
+        onClose={() => setShopModalOpen(false)}
+        defaultTab={shopModalTab}
+      />
     </>
   );
 };

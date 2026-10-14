@@ -1,0 +1,993 @@
+/* ZDrop Auth & Shop Portal Styles */
+
+/* Google Sign-In Button */
+.zd-google-auth-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.zd-google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.zd-google-btn:hover:not(:disabled) {
+  border-color: var(--text-primary);
+  background: var(--surface-soft);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.zd-google-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.zd-google-icon {
+  flex-shrink: 0;
+}
+
+.zd-google-btn-text {
+  font-family: var(--font-jakarta), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.zd-dev-auth-helper {
+  display: flex;
+  justify-content: center;
+}
+
+.zd-dev-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-jetbrains), monospace;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.zd-dev-auth-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+  background: var(--surface-soft);
+}
+
+.zd-dev-icon {
+  color: #eab308;
+}
+
+/* Navbar Auth & User Dropdown */
+.zd-nav-auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-nav-google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.zd-nav-google-btn:hover {
+  border-color: var(--text-primary);
+  background: var(--surface-soft);
+}
+
+.zd-google-icon-sm {
+  flex-shrink: 0;
+}
+
+.zd-user-menu-container {
+  position: relative;
+}
+
+.zd-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 12px 4px 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.zd-user-pill:hover {
+  border-color: var(--text-primary);
+  background: var(--surface-soft);
+}
+
+.zd-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.zd-user-initials {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  font-family: var(--font-jetbrains), monospace;
+}
+
+.zd-user-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zd-user-chevron {
+  color: var(--text-muted);
+}
+
+.zd-user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zd-user-dropdown-info {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zd-user-dropdown-name {
+  font-weight: 700;
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.zd-user-dropdown-email {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  word-break: break-all;
+}
+
+.zd-user-role-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.zd-user-dropdown-shop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-soft);
+  border-radius: 10px;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.zd-user-dropdown-shop strong {
+  display: block;
+  font-size: 12px;
+}
+
+.zd-user-dropdown-shop small {
+  color: var(--text-muted);
+  font-family: var(--font-jetbrains), monospace;
+}
+
+.zd-user-dropdown-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zd-user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+}
+
+.zd-user-dropdown-item:hover {
+  background: var(--surface-soft);
+}
+
+.zd-user-logout {
+  color: var(--danger);
+}
+
+.zd-user-logout:hover {
+  background: var(--danger-soft);
+}
+
+/* Mobile Auth Section */
+.zd-mobile-auth-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.zd-mobile-user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zd-mobile-user-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.zd-mobile-user-details strong {
+  font-size: 14px;
+}
+
+.zd-mobile-user-details small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.zd-btn-logout-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.zd-mobile-auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Auth Gate Card in Workbench */
+.zd-auth-gate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 16px;
+  gap: 14px;
+  background: var(--surface-soft);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+}
+
+.zd-auth-gate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.zd-auth-gate-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.zd-auth-gate-card p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  max-width: 340px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.zd-auth-gate-action {
+  width: 100%;
+  max-width: 320px;
+  margin: 6px 0;
+}
+
+.zd-auth-gate-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  text-align: left;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.zd-auth-gate-perks div {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.zd-auth-gate-perks strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.zd-auth-gate-perks span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* User Auth Badge in Upload Form */
+.zd-user-auth-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.zd-user-badge-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zd-badge-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+
+.zd-badge-initials {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-jetbrains), monospace;
+}
+
+.zd-badge-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.zd-badge-text strong {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.zd-badge-text small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.zd-badge-pill {
+  padding: 3px 8px;
+  background: var(--success-soft);
+  color: var(--success);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Destination Shop Selector */
+.zd-shop-selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zd-shop-select-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.zd-shop-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-jakarta), sans-serif;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+
+.zd-shop-select:focus {
+  border-color: var(--text-primary);
+}
+
+/* Shop Modal Styles */
+.zd-auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.zd-auth-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.zd-auth-modal {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 1;
+}
+
+.zd-auth-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zd-auth-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.zd-auth-tabs {
+  display: flex;
+  background: var(--surface-soft);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.zd-auth-tab {
+  flex: 1;
+  min-height: 38px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.zd-auth-tab.active {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.zd-auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.zd-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.zd-auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .zd-auth-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.zd-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zd-auth-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.zd-auth-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.zd-auth-field-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.zd-auth-input-wrapper input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px 10px 38px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: var(--font-jakarta), sans-serif;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.zd-auth-input-wrapper input:focus {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(32, 39, 31, 0.08);
+}
+
+.zd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 160ms ease;
+  text-decoration: none;
+}
+
+.zd-btn-primary {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border: 1px solid var(--primary);
+}
+
+.zd-btn-primary:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.zd-btn-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--line);
+}
+
+.zd-btn-secondary:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--text-secondary);
+}
+
+.zd-auth-submit {
+  margin-top: 6px;
+  min-height: 48px;
+}
+
+/* Shop Header Banner in Kiosk */
+.zd-shop-header-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.zd-shop-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zd-shop-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zd-shop-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.zd-shop-name-row h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.zd-shop-code-pill {
+  padding: 2px 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--text-secondary);
+}
+
+.zd-shop-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: var(--success-soft);
+  color: var(--success);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.zd-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: zd-pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes zd-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.zd-shop-address {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 2px 0 0 0;
+}
+
+.zd-shop-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zd-shop-qr-btn {
+  font-size: 12px;
+}
+
+.zd-shop-stats-badge {
+  padding: 6px 12px;
+  background: var(--surface-soft);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Kiosk Gate Prompt */
+.zd-shop-kiosk-gate {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.zd-gate-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 600px;
+}
+
+.zd-gate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface-soft);
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  width: fit-content;
+}
+
+.zd-gate-content h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.zd-gate-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.zd-gate-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.zd-gate-guest-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.zd-gate-guest-link:hover {
+  color: var(--text-primary);
+}
+
+/* Counter Standee Poster */
+.zd-shop-poster-modal {
+  max-width: 440px;
+}
+
+.zd-shop-poster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 2px solid #0f172a;
+  border-radius: 16px;
+  gap: 16px;
+}
+
+.zd-poster-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zd-poster-brand {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: #0f172a;
+}
+
+.zd-poster-shop-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.zd-poster-shop-location {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.zd-poster-qr-wrapper {
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zd-poster-qr {
+  width: 200px;
+  height: 200px;
+  display: block;
+}
+
+.zd-poster-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zd-poster-cta h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.zd-poster-cta p {
+  font-size: 12px;
+  color: #475569;
+  margin: 0;
+}
+
+.zd-poster-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px dashed #cbd5e1;
+  font-size: 11px;
+}
+
+.zd-poster-perk {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.zd-poster-code-badge {
+  font-family: var(--font-jetbrains), monospace;
+  color: #475569;
+}
+
+.zd-poster-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Print Media */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-shop-poster, #printable-shop-poster * {
+    visibility: visible;
+  }
+  #printable-shop-poster {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    max-width: 500px;
+    border: 3px solid #000;
+    box-shadow: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

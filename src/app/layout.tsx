@@ -1,23 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, EB_Garamond } from "next/font/google";
+import { Space_Grotesk, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { MotionConfig } from "motion/react";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
   display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
-const ebGaramond = EB_Garamond({
-  subsets: ["latin"],
-  variable: "--font-garamond",
+  variable: "--font-jetbrains",
   display: "swap",
 });
 
@@ -25,15 +27,21 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f5ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#181d17" },
   ],
 };
 
 export const metadata: Metadata = {
   title: "ZDrop - Drop it. Print it. Done.",
-  description: "Instant, zero-trace document printing for campus xerox counters and copy centers.",
+  description: "Anonymous document handoff for print shops. Upload, share a six-digit code, and print without an account.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "ZDrop",
+  },
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -47,8 +55,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { SmoothScroll } from "@/components/SmoothScroll";
-
 export default function RootLayout({
   children,
 }: {
@@ -58,21 +64,15 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable} ${ebGaramond.variable} light`}
+      className={`${spaceGrotesk.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
                 var stored = localStorage.getItem('zdrop-theme');
-                var isDark = stored ? stored === 'dark' : false;
+                var isDark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 if (isDark) {
                   document.documentElement.classList.add('dark');
                   document.documentElement.classList.remove('light');
@@ -87,9 +87,11 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-[100dvh] bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-[#fafafa] font-sans antialiased selection:bg-emerald-500/25 selection:text-emerald-700 dark:selection:text-emerald-300 transition-colors duration-200">
+      <body className="min-h-[100dvh] font-sans antialiased">
         <ThemeProvider>
-          <SmoothScroll>{children}</SmoothScroll>
+          <AuthProvider>
+            <MotionConfig reducedMotion="user">{children}</MotionConfig>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

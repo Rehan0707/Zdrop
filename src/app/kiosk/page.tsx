@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
 import { SessionData } from "@/lib/types";
 import {
   resolveByAccessCode,
@@ -13,14 +12,35 @@ import { Navbar } from "@/components/Navbar";
 import { KioskEntryView } from "@/views/KioskEntryView";
 import { KioskJobConsole } from "@/components/KioskJobConsole";
 import { Footer } from "@/components/landing/Footer";
+import {
+  CheckCircle2,
+  Store,
+  QrCode,
+  ShieldCheck,
+  UserPlus,
+  LogIn,
+  ArrowRight
+} from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { ShopAuthModal } from "@/components/ShopAuthModal";
+import { ShopQrModal } from "@/components/ShopQrModal";
+import "@/components/kiosk.css";
 
 function KioskContent() {
   const searchParams = useSearchParams();
+  const { user, shop } = useAuth();
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Shop portal state
+  const [shopAuthOpen, setShopAuthOpen] = useState(false);
+  const [shopAuthTab, setShopAuthTab] = useState<"login" | "register">("login");
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
+  const [completedCount, setCompletedCount] = useState(0);
 
   // Auto-resolve code from URL query parameter (from QR code scan)
   useEffect(() => {
@@ -62,6 +82,7 @@ function KioskContent() {
     try {
       await deleteSession(session.id);
       setSession(null);
+      setCompletedCount((prev) => prev + 1);
       setSuccessToast("Job completed. Uploaded files purged permanently.");
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (e) {
@@ -77,69 +98,138 @@ function KioskContent() {
   };
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col bg-zinc-50 dark:bg-[#09090b] text-zinc-900 dark:text-[#fafafa] selection:bg-emerald-500/25 selection:text-emerald-700 dark:selection:text-emerald-300 transition-colors duration-200 overflow-x-hidden">
-      {/* Atmospheric Background Design from Instructions */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
-        <img
-          src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
-          alt=""
-          className="w-full h-full object-cover opacity-10 dark:opacity-20 filter contrast-125 brightness-90"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-50/80 via-zinc-50/95 to-zinc-50 dark:from-[#09090b]/80 dark:via-[#09090b]/90 dark:to-[#09090b] ring-1 ring-black/5 dark:ring-black/30" />
-        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-500/10 blur-[140px] rounded-full" />
-      </div>
-
+    <div className="zd-kiosk-page">
       <Navbar currentRole="kiosk" />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 pt-24 pb-12 sm:pt-28">
+      <main id="main-content" className="zd-container zd-kiosk-main">
+        {/* Shop Owner Portal Bar / Authentication Gate */}
+        {shop ? (
+          <div className="zd-shop-header-banner">
+            <div className="zd-shop-header-left">
+              <div className="zd-shop-icon-wrapper">
+                <Store size={22} />
+              </div>
+              <div>
+                <div className="zd-shop-name-row">
+                  <h2>{shop.shopName}</h2>
+                  <span className="zd-shop-code-pill">Code: {shop.shopCode}</span>
+                  <span className="zd-shop-status-pill">
+                    <span className="zd-live-dot" /> Online
+                  </span>
+                </div>
+                <p className="zd-shop-address">{shop.campusAddress}</p>
+              </div>
+            </div>
+
+            <div className="zd-shop-header-right">
+              <button
+                type="button"
+                className="zd-btn zd-btn-secondary zd-shop-qr-btn"
+                onClick={() => setQrModalOpen(true)}
+              >
+                <QrCode size={16} />
+                <span>Counter QR Poster</span>
+              </button>
+              {completedCount > 0 && (
+                <div className="zd-shop-stats-badge">
+                  <span>{completedCount} printed & purged</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : !guestMode && !session ? (
+          <div className="zd-shop-kiosk-gate">
+            <div className="zd-gate-content">
+              <div className="zd-gate-badge">
+                <Store size={18} />
+                <span>Print Shop Portal</span>
+              </div>
+              <h2>Operating a Xerox or Print Shop?</h2>
+              <p>
+                Sign in to your shop account or create one in 30 seconds to get your counter QR code standee and branded kiosk.
+              </p>
+              <div className="zd-gate-actions">
+                <button
+                  type="button"
+                  className="zd-btn zd-btn-primary"
+                  onClick={() => {
+                    setShopAuthTab("login");
+                    setShopAuthOpen(true);
+                  }}
+                >
+                  <LogIn size={16} />
+                  <span>Sign In to Shop Kiosk</span>
+                </button>
+                <button
+                  type="button"
+                  className="zd-btn zd-btn-secondary"
+                  onClick={() => {
+                    setShopAuthTab("register");
+                    setShopAuthOpen(true);
+                  }}
+                >
+                  <UserPlus size={16} />
+                  <span>Create Shop Account</span>
+                </button>
+                <button
+                  type="button"
+                  className="zd-gate-guest-link"
+                  onClick={() => setGuestMode(true)}
+                >
+                  <span>Continue as Guest Operator</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {errorMessage && session && (
-          <p role="alert" className="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs text-center">
+          <p role="alert" className="zd-kiosk-error">
             {errorMessage}
           </p>
         )}
 
-        {/* Success Toast */}
         {successToast && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold text-center max-w-md mx-auto shadow-lg backdrop-blur-md">
+          <div role="status" className="zd-kiosk-success">
+            <CheckCircle2 size={20} aria-hidden="true" />
             {successToast}
           </div>
         )}
 
-        <AnimatePresence mode="wait">
-          {!session ? (
-            <motion.div
-              key="entry"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <KioskEntryView
-                onSubmitCode={handleCodeSubmit}
-                isLoading={isLoading}
-                errorMessage={errorMessage}
-                onClearError={() => setErrorMessage(null)}
-              />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="job"
-              initial={{ opacity: 0, scale: 0.99 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <KioskJobConsole
-                session={session}
-                onPrint={() => {}}
-                onCompleteAndPurge={handleCompleteAndPurge}
-                onCancel={handleCancel}
-                isPurging={isPurging}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!session ? (
+          <KioskEntryView
+            onSubmitCode={handleCodeSubmit}
+            isLoading={isLoading}
+            errorMessage={errorMessage}
+            onClearError={() => setErrorMessage(null)}
+          />
+        ) : (
+          <KioskJobConsole
+            session={session}
+            onPrint={() => {}}
+            onCompleteAndPurge={handleCompleteAndPurge}
+            onCancel={handleCancel}
+            isPurging={isPurging}
+          />
+        )}
       </main>
+
+      {/* Shop Owner Auth Modal */}
+      <ShopAuthModal
+        isOpen={shopAuthOpen}
+        onClose={() => setShopAuthOpen(false)}
+        defaultTab={shopAuthTab}
+      />
+
+      {/* Printable Counter QR Modal */}
+      {shop && (
+        <ShopQrModal
+          shop={shop}
+          isOpen={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+        />
+      )}
 
       <Footer />
     </div>
@@ -148,7 +238,7 @@ function KioskContent() {
 
 export default function KioskPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-zinc-400">Loading Print Shop Console…</div>}>
+    <Suspense fallback={<div className="zd-kiosk-loading" role="status">Opening the print desk…</div>}>
       <KioskContent />
     </Suspense>
   );
