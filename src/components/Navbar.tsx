@@ -1,15 +1,19 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, LogOut, Printer, Store, UserRound } from "lucide-react";
+import { ArrowUpRight, LogOut, Printer, QrCode, Sparkles, Store, UserRound } from "lucide-react";
 import { ZDropLogo } from "./ZDropLogo";
 import { ThemeToggle } from "./ThemeToggle";
 import { ShopAuthModal } from "./ShopAuthModal";
+import { ShopQrModal } from "./ShopQrModal";
+import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useAuth } from "@/lib/auth-context";
+
 interface NavbarProps {
   currentRole?: "student" | "kiosk";
   showSections?: boolean;
 }
+
 export function Navbar({
   currentRole = "student",
   showSections = true,
@@ -17,8 +21,10 @@ export function Navbar({
   const { user, shop, logout } = useAuth();
   const [accountOpen, setAccountOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
   const [error, setError] = useState("");
   const account = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!accountOpen) return;
     const dismiss = (event: PointerEvent) => {
@@ -38,6 +44,7 @@ export function Navbar({
       document.removeEventListener("keydown", keyboard);
     };
   }, [accountOpen]);
+
   return (
     <header className="zd-header">
       <a className="zd-skip" href="#main-content">
@@ -79,19 +86,70 @@ export function Navbar({
               aria-controls="account-options"
               onClick={() => setAccountOpen(!accountOpen)}
             >
-              <UserRound size={18} />
+              {user?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name || "User avatar"}
+                  style={{ width: "20px", height: "20px", borderRadius: "50%" }}
+                />
+              ) : (
+                <UserRound size={18} />
+              )}
             </button>
             {accountOpen && (
-              <div id="account-options" className="zd-account-menu">
+              <div id="account-options" className="zd-account-menu" style={{ width: "260px" }}>
                 {user ? (
-                  <>
-                    <strong>{user.name || user.email}</strong>
-                    <small>{user.email}</small>
-                    {shop && <small>{shop.shopName}</small>}
-                  </>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", paddingBottom: "8px", borderBottom: "1px solid var(--line)" }}>
+                    <strong style={{ fontSize: "14px" }}>{user.name || user.email}</strong>
+                    <small style={{ color: "var(--text-muted)", wordBreak: "break-all" }}>{user.email}</small>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: "4px",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: "var(--success)",
+                        background: "var(--success-soft)",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        width: "fit-content",
+                      }}
+                    >
+                      {shop ? "Shop Owner" : "Verified User"}
+                    </span>
+                  </div>
                 ) : (
-                  <p>Sign in from your print job to upload files.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingBottom: "10px", borderBottom: "1px solid var(--line)" }}>
+                    <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
+                      Sign in with Google to upload files and track print jobs.
+                    </p>
+                    <GoogleSignInButton label="Sign in with Google" showDevFallback={false} />
+                  </div>
                 )}
+
+                {shop && (
+                  <div style={{ padding: "8px 0", borderBottom: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-primary)" }}>{shop.shopName}</span>
+                    <span style={{ fontSize: "10px", fontFamily: "var(--font-jetbrains), monospace", color: "var(--text-muted)" }}>
+                      CODE: {shop.shopCode}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPosterOpen(true);
+                        setAccountOpen(false);
+                      }}
+                      style={{ marginTop: "4px" }}
+                    >
+                      <QrCode size={15} />
+                      Counter QR Standee
+                    </button>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -100,8 +158,9 @@ export function Navbar({
                   }}
                 >
                   <Store size={16} />
-                  {shop ? "Shop account" : "Shop sign in / register"}
+                  {shop ? "Manage shop" : "Shop sign in / register"}
                 </button>
+
                 {user && (
                   <button
                     type="button"
@@ -113,18 +172,26 @@ export function Navbar({
                         setError("Could not sign out. Please try again.");
                       }
                     }}
+                    style={{ color: "var(--danger)" }}
                   >
                     <LogOut size={16} />
                     Sign out
                   </button>
                 )}
-                {error && <p role="alert">{error}</p>}
+                {error && <p role="alert" style={{ color: "var(--danger)", fontSize: "11px", margin: "4px 0 0" }}>{error}</p>}
               </div>
             )}
           </div>
         </div>
       </nav>
       <ShopAuthModal isOpen={shopOpen} onClose={() => setShopOpen(false)} />
+      {shop && (
+        <ShopQrModal
+          shop={shop}
+          isOpen={posterOpen}
+          onClose={() => setPosterOpen(false)}
+        />
+      )}
     </header>
   );
 }

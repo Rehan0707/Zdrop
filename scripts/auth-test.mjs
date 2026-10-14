@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.ZDROP_TEST_URL || 'http://localhost:3000';
 
 async function waitForServer() {
   for (let i = 0; i < 20; i++) {
@@ -30,22 +30,26 @@ async function runTests() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'Rohan Student', email: 'rohan.student@college.edu' })
   });
-  assert.equal(googleRes.status, 200, 'Mock Google auth should succeed');
-  const googleData = await googleRes.json();
-  assert.equal(googleData.user.email, 'rohan.student@college.edu');
-  assert.equal(googleData.user.role, 'user');
-  const userCookie = googleRes.headers.get('set-cookie');
-  assert.ok(userCookie, 'Auth cookie should be set');
-  console.log('✔ Test 2 passed: Google sign in succeeds and sets cookie');
+  if (googleRes.status === 404) {
+    assert.equal(googleRes.headers.get('set-cookie'), null, 'Production mock auth must not set a cookie');
+    console.log('✔ Tests 2–3 passed: production mock sign-in is unavailable');
+  } else {
+    assert.equal(googleRes.status, 200, 'Development mock Google auth should succeed');
+    const googleData = await googleRes.json();
+    assert.equal(googleData.user.email, 'rohan.student@college.edu');
+    assert.equal(googleData.user.role, 'user');
+    const userCookie = googleRes.headers.get('set-cookie');
+    assert.ok(userCookie, 'Auth cookie should be set');
+    console.log('✔ Test 2 passed: development mock sign-in succeeds and sets cookie');
 
-  // 3. /api/auth/me with user cookie
-  const me2 = await (await fetch(`${BASE}/api/auth/me`, {
-    headers: { cookie: userCookie }
-  })).json();
-  assert.equal(me2.user.email, 'rohan.student@college.edu');
-  assert.equal(me2.user.role, 'user');
-  assert.equal(me2.shop, null);
-  console.log('✔ Test 3 passed: /api/auth/me returns Google user profile');
+    const me2 = await (await fetch(`${BASE}/api/auth/me`, {
+      headers: { cookie: userCookie }
+    })).json();
+    assert.equal(me2.user.email, 'rohan.student@college.edu');
+    assert.equal(me2.user.role, 'user');
+    assert.equal(me2.shop, null);
+    console.log('✔ Test 3 passed: /api/auth/me returns development user profile');
+  }
 
   // 4. Shop owner registration
   const uniqueCode = `SHOP${Date.now().toString().slice(-4)}`;

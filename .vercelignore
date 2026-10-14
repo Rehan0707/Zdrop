@@ -1,4 +1,5 @@
 .zdrop-data
+.next-build/
 .playwright-cli
 output/
 docs/

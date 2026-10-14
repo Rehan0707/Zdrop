@@ -1532,6 +1532,283 @@ textarea,
   transform: scale(0.98);
 }
 
+/* ==========================================================================
+   CodeView & SuccessView (Customer Post-Upload & Audit Receipt Screens)
+   ========================================================================== */
+
+.zd-post-upload-view {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.zd-post-upload-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.zd-code-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 140ms ease;
+  padding: 0;
+}
+
+.zd-code-back-btn:hover {
+  color: var(--text-primary);
+}
+
+.zd-summary-pill {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.zd-card-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 12px 32px -24px #20271f24;
+}
+
+.zd-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.zd-pill-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid currentColor;
+}
+
+.zd-display-digits-box {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+
+.zd-display-digits {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.zd-display-digit {
+  width: 48px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--text-primary);
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px rgba(216, 243, 106, 0.45);
+}
+
+.zd-display-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.zd-timer-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.zd-timer-val {
+  font-family: var(--font-jetbrains), monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.zd-code-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.zd-code-qr-card img {
+  width: 190px;
+  height: 190px;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+}
+
+.zd-params-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.zd-param-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zd-param-label {
+  font-size: 10px;
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.zd-param-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.zd-pipeline-step-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.zd-pipeline-step-icon--done {
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+.zd-pipeline-step-icon--current {
+  background: var(--primary);
+  border: 1px solid var(--primary-ink);
+  color: var(--primary-ink);
+}
+
+.zd-pipeline-step-icon--pending {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--text-muted);
+}
+
+.zd-pipeline-line {
+  position: absolute;
+  top: 24px;
+  left: 11px;
+  width: 2px;
+  height: 20px;
+  background: var(--line);
+}
+
+.zd-pipeline-line--done {
+  background: var(--success);
+}
+
+.zd-success-container {
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 48px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.zd-success-shield-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--success-soft);
+  border: 1.5px solid var(--success);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 0 28px rgba(66, 98, 38, 0.2);
+}
+
+.zd-receipt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.zd-receipt-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.zd-receipt-label {
+  font-size: 10px;
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.zd-receipt-val {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-jetbrains), monospace;
+  color: var(--text-primary);
+}
+
 @media (max-width: 480px) {
   .zd-otp-digit {
     width: 42px;
@@ -1541,6 +1818,14 @@ textarea,
   }
   .zd-otp-container {
     gap: 4px;
+  }
+  .zd-display-digit {
+    width: 40px;
+    height: 56px;
+    font-size: 24px;
+  }
+  .zd-display-digits {
+    gap: 5px;
   }
   .zd-kiosk-card {
     padding: 24px 18px;

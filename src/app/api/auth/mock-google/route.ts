@@ -4,6 +4,9 @@ import { UserProfile } from '@/lib/types';
 import { randomUUID } from 'node:crypto';
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV !== 'development') {
+    return new NextResponse(null, { status: 404 });
+  }
   try {
     const body = await request.json().catch(() => ({}));
     const email = body.email || 'student.alex@campus.edu';

@@ -54,7 +54,23 @@ export function HeroSection({
     fetch("/api/shops")
       .then((response) => response.json())
       .then((data) => {
-        if (active && Array.isArray(data.shops)) setShops(data.shops);
+        if (active && Array.isArray(data.shops)) {
+          setShops(data.shops);
+          if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const shopQuery = params.get("shop");
+            if (shopQuery) {
+              const matched = data.shops.find(
+                (s: ShopProfile) =>
+                  s.shopCode.toLowerCase() === shopQuery.toLowerCase() ||
+                  s.id.toLowerCase() === shopQuery.toLowerCase()
+              );
+              if (matched) {
+                setSelectedShopId(matched.id);
+              }
+            }
+          }
+        }
       })
       .catch(() => {});
     return () => {
@@ -175,9 +191,16 @@ export function HeroSection({
                 )}
                 {shops.length > 0 && (
                   <div className="zd-field zd-shop-field">
-                    <label htmlFor="destination-shop">
-                      <Store size={14} />
-                      Destination print shop
+                    <label htmlFor="destination-shop" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        <Store size={14} />
+                        Destination print shop
+                      </span>
+                      {selectedShopId && (
+                        <span className="zd-pill-active" style={{ fontSize: "10px", padding: "1px 6px" }}>
+                          ✓ Selected
+                        </span>
+                      )}
                     </label>
                     <select
                       id="destination-shop"

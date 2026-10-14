@@ -75,7 +75,7 @@ export function GoogleSignInButton({
         <span className="zd-google-btn-text">{loading ? 'Connecting...' : label}</span>
       </button>
 
-      {showDevFallback && (
+      {process.env.NODE_ENV === 'development' && showDevFallback && (
         <div className="zd-dev-auth-helper">
           <button
             type="button"

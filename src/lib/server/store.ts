@@ -5,10 +5,6 @@ import { enforceNoStore } from './firebase-storage-policy';
 import { randomInt, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rm, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { initializeApp, getApps, cert, applicationDefault } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
-import { getStorage } from 'firebase-admin/storage';
 import { SessionData } from '../types';
 import {
   createSupabaseUploadUrl,
@@ -47,6 +43,12 @@ function currentLease(id: string) {
 }
 
 function firebase() {
+  // Keep the Admin SDK out of Supabase and local route initialization.
+  // Its JWKS dependency is ESM-only and can fail when loaded by a Node CJS function.
+  const { initializeApp, getApps, cert, applicationDefault } = require('firebase-admin/app') as typeof import('firebase-admin/app');
+  const { getFirestore } = require('firebase-admin/firestore') as typeof import('firebase-admin/firestore');
+  const { getAuth } = require('firebase-admin/auth') as typeof import('firebase-admin/auth');
+  const { getStorage } = require('firebase-admin/storage') as typeof import('firebase-admin/storage');
   if (!getApps().length) {
     initializeApp({
       credential: process.env.FIREBASE_PRIVATE_KEY
@@ -59,7 +61,7 @@ function firebase() {
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
   }
-  return { db: getFirestore(), bucket: getStorage().bucket() };
+  return { db: getFirestore(), bucket: getStorage().bucket(), auth: getAuth() };
 }
 
 export async function readSession(id: string): Promise<StoredSession | null> {
@@ -198,7 +200,7 @@ export async function purge(s: StoredSession, source: StoredSession['deletionSou
   await saveSession(s);
 
   if (isFirebaseStorage) {
-    await getAuth().deleteUser(s.id).catch((error) => {
+    await firebase().auth.deleteUser(s.id).catch((error) => {
       if (error.code !== 'auth/user-not-found') throw error;
     });
   }
@@ -296,7 +298,7 @@ export async function cloudUpload(s: StoredSession) {
   firebase();
   return {
     provider: 'firebase' as const,
-    customToken: await getAuth().createCustomToken(s.id, { uploader: true }),
+    customToken: await firebase().auth.createCustomToken(s.id, { uploader: true }),
     config: {
       apiKey,
       authDomain: `${process.env.FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -310,7 +312,7 @@ export async function retire(s: StoredSession) {
   if (cloud) {
     if (isFirebaseStorage) {
       firebase();
-      await getAuth().deleteUser(s.id).catch((error) => {
+      await firebase().auth.deleteUser(s.id).catch((error) => {
         if (error.code !== 'auth/user-not-found') throw error;
       });
       await closeUploadGrant(s.id);

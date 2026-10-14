@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.VERCEL ? '.next' : (process.env.ZDROP_NEXT_DIST_DIR || '.next'),
   reactStrictMode: true,
   serverExternalPackages: ["firebase-admin", "pdf-lib", "jszip"],
   experimental: {
