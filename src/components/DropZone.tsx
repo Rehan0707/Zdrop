@@ -4,6 +4,7 @@ import { useState, useRef, useId, ChangeEvent, DragEvent } from "react";
 import { UploadCloud, AlertCircle, ArrowUpRight } from "lucide-react";
 import { FileMetadata } from "@/lib/types";
 import { FileCard } from "./FileCard";
+import { getClientDocumentPageCount } from "@/lib/client-document";
 
 interface DropZoneProps {
   files: FileMetadata[];
@@ -27,7 +28,7 @@ export function DropZone({
 
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
 
-  const validateAndAddFiles = (incomingFiles: FileList | File[]) => {
+  const validateAndAddFiles = async (incomingFiles: FileList | File[]) => {
     setErrorMessage(null);
     const newFiles: FileMetadata[] = [...files];
 
@@ -83,13 +84,16 @@ export function DropZone({
           ? URL.createObjectURL(file)
           : undefined;
 
+      // Accurately read page count from PDF, DOCX, or Image
+      const pageCount = await getClientDocumentPageCount(file);
+
       newFiles.push({
         fileId: "file_" + crypto.randomUUID(),
         name: file.name,
         size: file.size,
         type,
         file,
-        pageCount: type.startsWith("image/") ? 1 : undefined,
+        pageCount,
         previewUrl,
       });
     }

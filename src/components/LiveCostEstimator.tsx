@@ -22,14 +22,24 @@ export function LiveCostEstimator({
     return calculatePrintCost(files, preferences, shopPricing);
   }, [files, preferences, shopPricing]);
 
+  const totalDetectedPages = useMemo(() => {
+    return files.reduce(
+      (acc, f) => acc + (f.pageCount && f.pageCount > 0 ? f.pageCount : 1),
+      0
+    );
+  }, [files]);
+
   if (files.length === 0) return null;
 
   return (
     <div className="zd-cost-estimator-card">
       <div className="zd-cost-estimator-header">
-        <div className="zd-cost-estimator-title">
+        <div className="zd-cost-estimator-title flex items-center gap-2 flex-wrap">
           <Receipt size={16} />
           <span>Estimated Print Cost</span>
+          <span className="zd-file-page-pill">
+            {totalDetectedPages} {totalDetectedPages === 1 ? "page" : "pages"} detected
+          </span>
         </div>
         {shopName ? (
           <span className="zd-cost-shop-pill">

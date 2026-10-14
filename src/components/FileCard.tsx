@@ -18,11 +18,18 @@ export function FileCard({ file, onRemove, disabled = false }: FileCardProps) {
         )}
       </span>
       <div className="zd-file-info">
-        <p title={file.name}>{file.name}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p title={file.name} style={{ margin: 0 }}>{file.name}</p>
+          {file.pageCount && (
+            <span className="zd-file-page-pill">
+              {file.pageCount} {file.pageCount === 1 ? "page" : "pages"}
+            </span>
+          )}
+        </div>
         <small>
           {formatBytes(file.size)}
           {file.pageCount
-            ? ` · ${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"}`
+            ? ` · ${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"} ready to print`
             : ""}
         </small>
       </div>

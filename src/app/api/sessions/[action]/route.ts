@@ -7,7 +7,12 @@ import { rateLimit } from '@/lib/server/rate-limit';
 import { getAuthUserFromCookie } from '@/lib/server/auth';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
-const metadata = z.object({ fileName: z.string().min(1).max(120), fileSize: z.number().int().positive().max(25 * 1024 * 1024), mimeType: AllowedMimeTypesEnum });
+const metadata = z.object({
+  fileName: z.string().min(1).max(120),
+  fileSize: z.number().int().positive().max(25 * 1024 * 1024),
+  mimeType: AllowedMimeTypesEnum,
+  pageCount: z.number().int().positive().max(2000).optional(),
+});
 const createSchema = z.object({
   files: z.array(metadata).min(1).max(3),
   preferences: PrintPreferencesSchema,
@@ -33,7 +38,8 @@ async function handle(req: NextRequest, action: string) {
           fileId: `file_${newToken().replaceAll('-', '').slice(0, 16)}`,
           name: f.fileName.replace(/[\x00-\x1f/\\]/g, '_'),
           size: f.fileSize,
-          type: f.mimeType
+          type: f.mimeType,
+          pageCount: typeof f.pageCount === 'number' && f.pageCount > 0 ? f.pageCount : undefined,
         })),
         userId: authUser?.id,
         userEmail: authUser?.email,

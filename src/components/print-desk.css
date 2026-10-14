@@ -2467,6 +2467,20 @@ textarea,
    PRICING CALCULATOR & MICRO-PAYMENTS STYLES
    ========================================================================== */
 
+.zd-file-page-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 12px;
+  background: rgba(0, 186, 87, 0.12);
+  color: #00ba57;
+  border: 1px solid rgba(0, 186, 87, 0.25);
+  white-space: nowrap;
+}
+
 /* 1. Live Cost Estimator Card (in DropZone / Print Setup) */
 .zd-cost-estimator-card {
   margin-top: 18px;
