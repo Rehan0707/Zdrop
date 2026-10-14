@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Download-Options', value: 'noopen' },
+      { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
       { key: 'Referrer-Policy', value: 'no-referrer' },
       { key: 'Permissions-Policy', value: 'camera=(self), microphone=()' },
       { key: 'X-Frame-Options', value: 'SAMEORIGIN' },

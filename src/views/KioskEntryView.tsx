@@ -1,7 +1,7 @@
 "use client";
 
 import { QrScanner } from "@/components/QrScanner";
-import { Printer, Shield, Clock } from "lucide-react";
+import { Printer, Shield, Clock, Lock } from "lucide-react";
 import { KioskOtpInput } from "@/components/KioskOtpInput";
 
 interface KioskEntryViewProps {
@@ -57,6 +57,18 @@ export function KioskEntryView({
             <h3>Zero Hard Drive Clutter</h3>
             <p>
               Documents stream into native print buffers. No files saved to your PC’s Downloads folder.
+            </p>
+          </div>
+        </div>
+
+        <div className="zd-guideline-card">
+          <div className="zd-guideline-icon">
+            <Lock size={18} />
+          </div>
+          <div className="zd-guideline-text">
+            <h3>Anti-Screenshot Shield</h3>
+            <p>
+              Direct print only. File downloads, right-click saving, and screen capture are restricted.
             </p>
           </div>
         </div>

@@ -8,8 +8,19 @@ async function serve(req: NextRequest) {
   const f = s.files.find(f => f.fileId === req.nextUrl.searchParams.get('fileId'));
   if (!f) return new Response('Not found', { status: 404 });
   const signed = await signedFileUrl(s, f.fileId);
-  if (signed) return new Response(null, { status: 302, headers: { Location: signed, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
-  return new Response(new Uint8Array(await getFile(s.id, f.fileId)), { headers: { 'Content-Type': f.type, 'Cache-Control': 'no-store, max-age=0', 'Content-Disposition': `${f.type.includes('wordprocessing') ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(f.name)}`, 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' } });
+  if (signed) return new Response(null, { status: 302, headers: { Location: signed, 'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0', 'Referrer-Policy': 'no-referrer', 'X-Download-Options': 'noopen' } });
+  return new Response(new Uint8Array(await getFile(s.id, f.fileId)), {
+    headers: {
+      'Content-Type': f.type,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Content-Disposition': `${f.type.includes('wordprocessing') ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(f.name)}`,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Download-Options': 'noopen',
+      'Referrer-Policy': 'no-referrer',
+    },
+  });
 }
 
 export async function GET(req: NextRequest) {

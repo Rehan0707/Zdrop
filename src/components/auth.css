@@ -969,15 +969,16 @@
   gap: 8px;
 }
 
-/* Print Media */
+/* Print Media for Shop QR Poster Standee */
 @media print {
-  body * {
+  body:has(#printable-shop-poster) * {
     visibility: hidden;
   }
-  #printable-shop-poster, #printable-shop-poster * {
+  body:has(#printable-shop-poster) #printable-shop-poster,
+  body:has(#printable-shop-poster) #printable-shop-poster * {
     visibility: visible;
   }
-  #printable-shop-poster {
+  body:has(#printable-shop-poster) #printable-shop-poster {
     position: fixed;
     left: 50%;
     top: 50%;

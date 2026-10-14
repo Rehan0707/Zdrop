@@ -5,19 +5,21 @@ import {
   Printer,
   Trash2,
   FileText,
-  FileImage,
   ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Layers,
   Palette,
+  Layers,
   FileSpreadsheet,
   AlertCircle,
-  ExternalLink,
+  ShieldCheck,
+  ShieldAlert,
+  Lock,
+  X,
 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { SessionData, FileMetadata } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
+import { SecureDocumentPreview } from "./SecureDocumentPreview";
+import { useScreenshotProtection } from "@/lib/useScreenshotProtection";
 
 interface KioskJobConsoleProps {
   session: SessionData;
@@ -39,27 +41,39 @@ export function KioskJobConsole({
   );
 
   const previewRef = useRef<HTMLIFrameElement>(null);
+  const imagePrintRef = useRef<HTMLIFrameElement>(null);
   const [confirmPurge, setConfirmPurge] = useState(false);
   const { preferences } = session;
+
+  // Anti-Screenshot and Anti-Download Hook
+  const { isShielded, securityAlert, clearAlert, unshieldManually } =
+    useScreenshotProtection({ enabled: true });
 
   const handlePrintClick = () => {
     onPrint();
     if (!selectedFile?.previewUrl) return;
-    if (selectedFile.type.includes("wordprocessing")) {
-      window.open(selectedFile.previewUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
+
     try {
-      previewRef.current?.contentWindow?.focus();
-      previewRef.current?.contentWindow?.print();
+      if (selectedFile.type.startsWith("image/")) {
+        imagePrintRef.current?.contentWindow?.focus();
+        imagePrintRef.current?.contentWindow?.print();
+        return;
+      }
+      if (selectedFile.type.includes("pdf")) {
+        previewRef.current?.contentWindow?.focus();
+        previewRef.current?.contentWindow?.print();
+        return;
+      }
+      // For other formats (e.g. DOCX), invoke window.print()
+      window.print();
     } catch {
-      window.open(selectedFile.previewUrl, "_blank", "noopener,noreferrer");
+      window.print();
     }
   };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "p") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
         e.preventDefault();
         handlePrintClick();
       }
@@ -69,7 +83,31 @@ export function KioskJobConsole({
   }, [selectedFile, onPrint]);
 
   return (
-    <div className="zd-console-card">
+    <div
+      className="zd-console-card zd-secure-surface"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {/* Screenshot / Screen Capture Blocked Toast Alert */}
+      {securityAlert && (
+        <div className="zd-screenshot-alert-toast" role="alert">
+          <div className="zd-screenshot-alert-icon">
+            <ShieldAlert size={20} />
+          </div>
+          <div className="zd-screenshot-alert-text">
+            <strong>Security Restriction Active</strong>
+            <p>{securityAlert}</p>
+          </div>
+          <button
+            type="button"
+            onClick={clearAlert}
+            className="zd-screenshot-alert-close"
+            aria-label="Dismiss security alert"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
       {/* Console Top Header */}
       <div className="zd-console-header">
         <div className="zd-console-header-left">
@@ -93,13 +131,27 @@ export function KioskJobConsole({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="zd-console-status-pill">
-            Status: Accessed
+          <span className="zd-console-status-pill zd-console-status-pill--secure">
+            <ShieldCheck size={14} />
+            <span>Print-Only (Anti-Capture Active)</span>
           </span>
         </div>
       </div>
 
       <div className="zd-console-body">
+        {/* Anti-Download & Anti-Screenshot Policy Strip */}
+        <div className="zd-security-policy-banner">
+          <div className="zd-security-policy-icon">
+            <Lock size={18} />
+          </div>
+          <div className="zd-security-policy-text">
+            <strong>Zero-Storage Customer Privacy Protocol:</strong>
+            <span>
+              {" "}This terminal operates in print-only mode. Downloading, saving to disk, right-click exporting, and screen capture/recording are strictly restricted.
+            </span>
+          </div>
+        </div>
+
         {/* Print Preferences Summary Cards */}
         <div>
           <h4 className="zd-console-section-title">
@@ -197,75 +249,38 @@ export function KioskJobConsole({
             })}
           </div>
 
-          {/* Preview Canvas Box */}
+          {/* Secure Preview Box with Anti-Screenshot Watermark and Privacy Shield */}
           {selectedFile && (
-            <div className="zd-console-preview-container">
-              {selectedFile.previewUrl && selectedFile.type.startsWith("image/") ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={selectedFile.previewUrl}
-                  alt={selectedFile.name}
-                  style={{ maxHeight: "360px", maxWidth: "100%", borderRadius: "8px", objectFit: "contain" }}
-                />
-              ) : selectedFile.previewUrl && selectedFile.type.includes("pdf") ? (
-                <div style={{ width: "100%", height: "360px" }}>
-                  <iframe
-                    ref={previewRef}
-                    src={selectedFile.previewUrl}
-                    title="PDF Preview"
-                    style={{ width: "100%", height: "100%", borderRadius: "8px", border: "1px solid var(--line)" }}
-                  />
-                </div>
-              ) : (
-                <div style={{ textAlign: "center", padding: "30px 10px" }}>
-                  <div
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      borderRadius: "12px",
-                      background: "var(--surface)",
-                      border: "1px solid var(--line)",
-                      display: "grid",
-                      placeItems: "center",
-                      margin: "0 auto 12px",
-                      color: "var(--text-primary)"
-                    }}
-                  >
-                    <FileText size={26} />
-                  </div>
-                  <p style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "15px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                    {selectedFile.name}
-                  </p>
-                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
-                    DOCX files stream via native application dialog.
-                  </p>
-                </div>
-              )}
-            </div>
+            <SecureDocumentPreview
+              file={selectedFile}
+              accessCode={session.accessCode}
+              isShielded={isShielded}
+              onUnshield={unshieldManually}
+              previewRef={previewRef}
+            />
           )}
         </div>
 
-        {selectedFile?.previewUrl && (
-          <div style={{ marginBottom: "16px" }}>
-            <a
-              className="zd-text-link"
-              style={{ fontSize: "12px" }}
-              href={selectedFile.previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <span>Open document in new window</span>
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        )}
+        {/* Restricted Mode Information Indicator (Replaces old 'Open in new window' download link) */}
+        <div className="zd-secure-preview-notice">
+          <ShieldCheck size={14} />
+          <span>
+            Protected Direct-Print Stream • Local file downloads, raw file exports, and screenshots are restricted.
+          </span>
+        </div>
 
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 16px" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5, margin: "14px 0 16px" }}>
           Apply customer’s copies, color, sides, and page range in your physical printer dialog. Print all attached documents before finalizing the job.
         </p>
 
+        {/* Dedicated Hidden Print Buffer for Images */}
         {selectedFile?.type.startsWith("image/") && (
-          <iframe ref={previewRef} title="Image print frame" src={selectedFile.previewUrl} className="sr-only" />
+          <iframe
+            ref={imagePrintRef}
+            title="Image print buffer"
+            src={selectedFile.previewUrl}
+            className="sr-only"
+          />
         )}
 
         <ConfirmDialog
