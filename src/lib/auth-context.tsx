@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { signInWithPopup } from 'firebase/auth';
+import { getClientAuth, getGoogleProvider } from './firebase-client';
 import { UserProfile, ShopProfile } from './types';
 
 interface RegisterShopData {
@@ -58,9 +60,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async (redirectTo = typeof window !== 'undefined' ? window.location.pathname : '/') => {
     setIsLoading(true);
     try {
-      const { signInWithPopup } = await import('firebase/auth');
-      const { getClientAuth, getGoogleProvider } = await import('./firebase-client');
-
       const auth = getClientAuth();
       const provider = getGoogleProvider();
 
