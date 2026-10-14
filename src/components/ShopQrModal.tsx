@@ -95,7 +95,7 @@ export function ShopQrModal({ shop, isOpen, onClose }: ShopQrModalProps) {
           <button
             type="button"
             onClick={handlePrint}
-            className="zd-btn zd-btn-primary w-full"
+            className="zd-button zd-button--primary w-full"
           >
             <Printer size={18} />
             <span>Print Counter Standee (A4)</span>
@@ -104,7 +104,7 @@ export function ShopQrModal({ shop, isOpen, onClose }: ShopQrModalProps) {
             <a
               href={qrDataUrl}
               download={`${shop.shopCode}-counter-qr.png`}
-              className="zd-btn zd-btn-secondary w-full"
+              className="zd-button zd-button--secondary w-full"
             >
               <Download size={18} />
               <span>Download QR Image</span>

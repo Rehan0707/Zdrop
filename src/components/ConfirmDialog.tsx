@@ -72,17 +72,30 @@ export function ConfirmDialog({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="rounded-3xl border border-slate-200 dark:border-white/15 bg-white dark:bg-gradient-to-b dark:from-[#161D2B] dark:to-[#0D1018] max-w-sm w-full p-6 shadow-2xl space-y-4 text-center backdrop-blur-xl transition-colors"
+            className="zd-kiosk-card max-w-sm w-full p-6 text-center space-y-4"
+            style={{ margin: "auto", position: "relative", zIndex: 100 }}
           >
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto shadow-inner">
-              <AlertTriangle className="w-6 h-6" />
+            <div
+              style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
+                background: "var(--danger-soft)",
+                border: "1px solid var(--danger)",
+                color: "var(--danger)",
+                display: "grid",
+                placeItems: "center",
+                margin: "0 auto"
+              }}
+            >
+              <AlertTriangle size={24} />
             </div>
 
             <div>
-              <h3 id="confirm-title" className="text-base font-bold text-slate-900 dark:text-white font-display">
+              <h3 id="confirm-title" style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "16px", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
                 {title}
               </h3>
-              <p id="confirm-description" className="text-xs text-slate-600 dark:text-slate-300 mt-1.5 font-sans leading-relaxed">
+              <p id="confirm-description" style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5, margin: 0 }}>
                 {message}
               </p>
             </div>
@@ -92,7 +105,8 @@ export function ConfirmDialog({
                 type="button"
                 onClick={onCancel}
                 disabled={isConfirming}
-                className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-slate-300 transition active:scale-[0.98] cursor-pointer shadow-2xs"
+                className="zd-button zd-button--secondary flex-1"
+                style={{ minHeight: "42px", padding: "8px 14px", fontSize: "12px" }}
               >
                 {cancelLabel}
               </button>
@@ -101,7 +115,8 @@ export function ConfirmDialog({
                 type="button"
                 onClick={onConfirm}
                 disabled={isConfirming}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-400 hover:to-red-500 text-white text-xs font-bold transition active:scale-[0.98] cursor-pointer disabled:opacity-50 font-display shadow-sm dark:shadow-[0_0_15px_rgba(244,63,94,0.3)]"
+                className="zd-btn-danger flex-1"
+                style={{ minHeight: "42px", padding: "8px 14px", fontSize: "12px" }}
               >
                 {isConfirming ? "Deleting..." : confirmLabel}
               </button>

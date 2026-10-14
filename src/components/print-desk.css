@@ -1013,6 +1013,540 @@ textarea,
     background: #303b2a;
   }
 }
+
+/* ==========================================================================
+   KIOSK & COUNTER TERMINAL (PRINT DESK DESIGN SYSTEM)
+   ========================================================================== */
+
+.zd-kiosk-wrapper {
+  width: min(680px, calc(100% - 32px));
+  margin-inline: auto;
+  padding: 44px 0 72px;
+}
+
+.zd-kiosk-wrapper--console {
+  width: min(980px, calc(100% - 32px));
+}
+
+.zd-kiosk-hero {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.zd-kiosk-hero .zd-eyebrow {
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.zd-kiosk-hero h1 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: clamp(28px, 4vw, 40px);
+  letter-spacing: -0.04em;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 10px;
+  line-height: 1.15;
+}
+
+.zd-kiosk-hero p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  max-width: 500px;
+  margin-inline: auto;
+}
+
+/* Shop Owner Status Banner */
+.zd-shop-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px -8px #20271f1a;
+  flex-wrap: wrap;
+}
+
+.zd-shop-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zd-shop-banner-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.zd-shop-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-shop-banner-title h2 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.zd-shop-code-pill {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.zd-shop-banner-address {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 2px 0 0;
+}
+
+/* Kiosk Card Container */
+.zd-kiosk-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 36px 32px;
+  box-shadow: 0 12px 36px -24px #20271f2e;
+}
+
+/* 6-Digit OTP Inputs */
+.zd-otp-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.zd-otp-digit {
+  width: 52px;
+  height: 72px;
+  text-align: center;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 28px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  -webkit-appearance: none;
+}
+
+.zd-otp-digit:hover:not(:disabled) {
+  border-color: var(--text-secondary);
+}
+
+.zd-otp-digit:focus {
+  border-color: var(--text-primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(216, 243, 106, 0.55);
+}
+
+.zd-otp-digit--filled {
+  background: var(--surface-soft);
+  border-color: var(--text-primary);
+}
+
+.zd-otp-separator {
+  color: var(--text-muted);
+  font-size: 20px;
+  font-weight: 700;
+  user-select: none;
+  margin-inline: 4px;
+}
+
+/* Submit Action Button */
+.zd-kiosk-submit {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--primary-ink);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.zd-kiosk-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.zd-kiosk-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.zd-kiosk-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Keypad */
+.zd-keypad-wrapper {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.zd-keypad-label {
+  font: 500 11px/1.4 var(--font-jetbrains), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.zd-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 320px;
+  margin-inline: auto;
+}
+
+.zd-keypad-key {
+  height: 50px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 19px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.zd-keypad-key:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--text-muted);
+}
+
+.zd-keypad-key:active:not(:disabled) {
+  transform: scale(0.96);
+  background: var(--surface-soft);
+}
+
+.zd-keypad-key--clear {
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* Operator Guidelines Strip */
+.zd-guidelines-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.zd-guideline-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.zd-guideline-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.zd-guideline-text h3 {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 3px;
+}
+
+.zd-guideline-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Error and Alert Banners */
+.zd-alert-danger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.zd-alert-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--success-soft);
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+/* Job Console Styling */
+.zd-console-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px -24px #20271f2e;
+}
+
+.zd-console-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.zd-console-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zd-console-code-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.zd-console-code-title span:first-child {
+  font: 500 11px/1.4 var(--font-jetbrains), monospace;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.zd-console-code {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.zd-console-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.zd-console-status-pill {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font: 700 11px/1.4 var(--font-jetbrains), monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.zd-console-body {
+  padding: 24px;
+}
+
+.zd-console-section-title {
+  font: 500 11px/1.4 var(--font-jetbrains), monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.zd-console-pref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.zd-console-pref-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.zd-console-pref-card-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.zd-console-pref-card-val {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.zd-console-file-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 16px;
+}
+
+.zd-console-file-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 140ms ease;
+}
+
+.zd-console-file-tab:hover {
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.zd-console-file-tab--active {
+  background: var(--surface);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px #20271f14;
+}
+
+.zd-console-preview-container {
+  min-height: 260px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.zd-console-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.zd-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.zd-btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+
+.zd-btn-danger:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+  .zd-otp-digit {
+    width: 42px;
+    height: 60px;
+    font-size: 24px;
+    border-radius: 10px;
+  }
+  .zd-otp-container {
+    gap: 4px;
+  }
+  .zd-kiosk-card {
+    padding: 24px 18px;
+  }
+}
+
 @media (max-width: 1050px) {
   .zd-hero-grid {
     grid-template-columns: 1fr 1fr;

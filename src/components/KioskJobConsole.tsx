@@ -69,97 +69,101 @@ export function KioskJobConsole({
   }, [selectedFile, onPrint]);
 
   return (
-    <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gradient-to-b dark:from-[#141926]/95 dark:to-[#0E121B]/95 shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-xl overflow-hidden transition-colors">
+    <div className="zd-console-card">
       {/* Console Top Header */}
-      <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-black/20">
-        <div className="flex items-center gap-3">
+      <div className="zd-console-header">
+        <div className="zd-console-header-left">
           <button
             type="button"
             onClick={onCancel}
-            className="p-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/10 transition active:scale-[0.98] cursor-pointer shadow-2xs"
+            className="zd-icon-button"
             aria-label="Back to code entry"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft size={18} />
           </button>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 uppercase">
-                Session Code:
-              </span>
-              <span className="text-lg font-extrabold font-mono text-blue-700 dark:text-cyan-400">
-                {session.accessCode}
-              </span>
+            <div className="zd-console-code-title">
+              <span>Session Code:</span>
+              <span className="zd-console-code">{session.accessCode}</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-sans">
+            <p className="zd-console-meta">
               {session.files.length} document{session.files.length > 1 ? "s" : ""} attached ({formatBytes(session.totalSizeBytes)})
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-cyan-950/60 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/30 font-mono">
+          <span className="zd-console-status-pill">
             Status: Accessed
           </span>
         </div>
       </div>
 
-      <div className="p-5 sm:p-7 space-y-6">
+      <div className="zd-console-body">
         {/* Print Preferences Summary Cards */}
         <div>
-          <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-mono">
+          <h4 className="zd-console-section-title">
             Customer Print Configuration
           </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="zd-console-pref-grid">
             {/* Copies */}
-            <div className="p-4 rounded-2xl bg-blue-50 dark:bg-cyan-950/20 border border-blue-200 dark:border-cyan-500/30 space-y-1">
-              <div className="flex items-center gap-1.5 text-blue-600 dark:text-cyan-400">
-                <Printer className="w-4 h-4" />
-                <span className="text-xs font-medium">Copies</span>
+            <div className="zd-console-pref-card">
+              <div className="zd-console-pref-card-label">
+                <Printer size={15} />
+                <span>Copies</span>
               </div>
-              <p className="text-xl font-extrabold text-slate-900 dark:text-white font-mono">
+              <p className="zd-console-pref-card-val">
                 {preferences.copies} {preferences.copies === 1 ? "Set" : "Sets"}
               </p>
             </div>
 
             {/* Color Mode */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 space-y-1">
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <Palette className="w-4 h-4" />
-                <span className="text-xs font-medium">Color Mode</span>
+            <div className="zd-console-pref-card">
+              <div className="zd-console-pref-card-label">
+                <Palette size={15} />
+                <span>Color Mode</span>
               </div>
-              <p className="text-base font-bold text-slate-900 dark:text-white">
+              <p className="zd-console-pref-card-val">
                 {preferences.colorMode === "BW" ? "Black & White" : "Full Color"}
               </p>
             </div>
 
             {/* Sides */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 space-y-1">
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <Layers className="w-4 h-4" />
-                <span className="text-xs font-medium">Print Sides</span>
+            <div className="zd-console-pref-card">
+              <div className="zd-console-pref-card-label">
+                <Layers size={15} />
+                <span>Print Sides</span>
               </div>
-              <p className="text-base font-bold text-slate-900 dark:text-white">
+              <p className="zd-console-pref-card-val">
                 {preferences.sides === "DOUBLE" ? "Double-Sided" : "Single-Sided"}
               </p>
             </div>
 
             {/* Pages */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-200 dark:border-white/10 space-y-1">
-              <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-                <FileSpreadsheet className="w-4 h-4" />
-                <span className="text-xs font-medium">Page Selection</span>
+            <div className="zd-console-pref-card">
+              <div className="zd-console-pref-card-label">
+                <FileSpreadsheet size={15} />
+                <span>Page Selection</span>
               </div>
-              <p className="text-base font-bold text-slate-900 dark:text-white truncate">
+              <p className="zd-console-pref-card-val" style={{ fontSize: "16px" }}>
                 {preferences.pageRange === "ALL" ? "All Pages" : `Pages: ${preferences.pageRange}`}
               </p>
             </div>
           </div>
 
           {preferences.customerNotes && (
-            <div className="mt-3 p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-500/30 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div
+              className="zd-alert-danger"
+              style={{
+                background: "var(--surface-soft)",
+                borderColor: "var(--line)",
+                color: "var(--text-primary)",
+                marginBottom: "20px"
+              }}
+            >
+              <AlertCircle size={16} />
               <div>
-                <span className="font-semibold">Special Customer Request: </span>
+                <strong>Special Customer Request: </strong>
                 <span>{preferences.customerNotes}</span>
               </div>
             </div>
@@ -167,13 +171,13 @@ export function KioskJobConsole({
         </div>
 
         {/* Document Selection Tabs & Preview */}
-        <div className="space-y-3">
-          <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-mono">
+        <div style={{ marginBottom: "20px" }}>
+          <h4 className="zd-console-section-title">
             Documents ({session.files.length})
           </h4>
 
           {/* File selector pills */}
-          <div className="flex flex-wrap gap-2">
+          <div className="zd-console-file-tabs">
             {session.files.map((file) => {
               const isSelected = selectedFile?.fileId === file.fileId;
               return (
@@ -181,15 +185,11 @@ export function KioskJobConsole({
                   key={file.fileId}
                   type="button"
                   onClick={() => setSelectedFile(file)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer active:scale-[0.98] ${
-                    isSelected
-                      ? "border-blue-500 bg-blue-50 text-blue-900 dark:border-cyan-500 dark:bg-cyan-950/40 dark:text-cyan-200 shadow-2xs"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:border-white/20"
-                  }`}
+                  className={`zd-console-file-tab ${isSelected ? "zd-console-file-tab--active" : ""}`}
                 >
-                  <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
-                  <span className="truncate max-w-[180px]">{file.name}</span>
-                  <span className="text-[10px] text-slate-400 font-mono">
+                  <FileText size={15} />
+                  <span style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</span>
+                  <span style={{ font: "11px var(--font-jetbrains), monospace", opacity: 0.7 }}>
                     ({file.pageCount ? `${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"} · ` : ""}{formatBytes(file.size)})
                   </span>
                 </button>
@@ -199,30 +199,44 @@ export function KioskJobConsole({
 
           {/* Preview Canvas Box */}
           {selectedFile && (
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/40 flex flex-col items-center justify-center min-h-[240px]">
+            <div className="zd-console-preview-container">
               {selectedFile.previewUrl && selectedFile.type.startsWith("image/") ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={selectedFile.previewUrl}
                   alt={selectedFile.name}
-                  className="max-h-80 rounded-xl shadow-lg object-contain bg-white dark:bg-white/5 p-2"
+                  style={{ maxHeight: "360px", maxWidth: "100%", borderRadius: "8px", objectFit: "contain" }}
                 />
               ) : selectedFile.previewUrl && selectedFile.type.includes("pdf") ? (
-                <div className="w-full text-center space-y-2">
+                <div style={{ width: "100%", height: "360px" }}>
                   <iframe
                     ref={previewRef}
                     src={selectedFile.previewUrl}
                     title="PDF Preview"
-                    className="w-full h-80 rounded-xl border border-slate-200 dark:border-white/10 bg-white"
+                    style={{ width: "100%", height: "100%", borderRadius: "8px", border: "1px solid var(--line)" }}
                   />
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-cyan-950/60 border border-blue-200 dark:border-cyan-500/30 text-blue-600 dark:text-cyan-400 flex items-center justify-center mx-auto mb-3">
-                    <FileText className="w-7 h-7" />
+                <div style={{ textAlign: "center", padding: "30px 10px" }}>
+                  <div
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      borderRadius: "12px",
+                      background: "var(--surface)",
+                      border: "1px solid var(--line)",
+                      display: "grid",
+                      placeItems: "center",
+                      margin: "0 auto 12px",
+                      color: "var(--text-primary)"
+                    }}
+                  >
+                    <FileText size={26} />
                   </div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white font-display">{selectedFile.name}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                  <p style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "15px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                    {selectedFile.name}
+                  </p>
+                  <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
                     DOCX files stream via native application dialog.
                   </p>
                 </div>
@@ -232,18 +246,21 @@ export function KioskJobConsole({
         </div>
 
         {selectedFile?.previewUrl && (
-          <a
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-cyan-400 hover:underline font-mono transition"
-            href={selectedFile.previewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span>Open document in new window</span>
-            <ExternalLink className="w-3 h-3" />
-          </a>
+          <div style={{ marginBottom: "16px" }}>
+            <a
+              className="zd-text-link"
+              style={{ fontSize: "12px" }}
+              href={selectedFile.previewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Open document in new window</span>
+              <ExternalLink size={14} />
+            </a>
+          </div>
         )}
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-sans">
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 16px" }}>
           Apply customer’s copies, color, sides, and page range in your physical printer dialog. Print all attached documents before finalizing the job.
         </p>
 
@@ -265,24 +282,24 @@ export function KioskJobConsole({
         />
 
         {/* Action Hub */}
-        <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="zd-console-actions">
           <button
             type="button"
             onClick={onCancel}
             disabled={isPurging}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition active:scale-[0.98] cursor-pointer shadow-2xs"
+            className="zd-button zd-button--secondary"
           >
             Close Terminal
           </button>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={handlePrintClick}
               disabled={isPurging}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 dark:from-cyan-500 dark:via-sky-500 dark:to-blue-600 dark:hover:from-cyan-400 dark:hover:to-blue-500 text-white font-bold text-sm font-display flex items-center justify-center gap-2 transition active:scale-[0.98] cursor-pointer shadow-md dark:shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+              className="zd-button zd-button--primary"
             >
-              <Printer className="w-4 h-4" />
+              <Printer size={16} />
               <span>Print Document (Ctrl+P)</span>
             </button>
 
@@ -290,9 +307,9 @@ export function KioskJobConsole({
               type="button"
               onClick={() => setConfirmPurge(true)}
               disabled={isPurging}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm font-display flex items-center justify-center gap-2 transition active:scale-[0.98] cursor-pointer shadow-md dark:shadow-[0_0_20px_rgba(16,185,129,0.3)] disabled:opacity-50"
+              className="zd-btn-danger"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 size={16} />
               <span>{isPurging ? "Purging Files..." : "Mark Printed & Purge"}</span>
             </button>
           </div>

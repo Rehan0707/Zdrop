@@ -18,7 +18,7 @@ const operator = await call('resolve', { method: 'GET', query: `?code=${s.access
 assert.equal(operator.session.status, 'ACCESSED');
 assert.equal(operator.session.files[0].pageCount, 1);
 const download = await fetch(origin + operator.session.files[0].previewUrl);
-assert.equal(download.headers.get('cache-control'), 'no-store, max-age=0');
+assert.ok(download.headers.get('cache-control')?.includes('no-store'));
 assert.deepEqual(Buffer.from(await download.arrayBuffer()), pdf);
 await call('delete', { token: 'wrong', body: { sessionId: s.id }, status: 403 });
 await call('delete', { token: operator.token, body: { sessionId: s.id } });

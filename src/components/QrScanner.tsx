@@ -62,7 +62,7 @@ export function QrScanner({ onCode, disabled }: { onCode: (code: string) => void
   }, [open]);
 
   return (
-    <div className="space-y-3">
+    <div style={{ marginTop: "18px" }}>
       <button
         type="button"
         disabled={disabled}
@@ -70,26 +70,41 @@ export function QrScanner({ onCode, disabled }: { onCode: (code: string) => void
           setError('');
           setOpen(!open);
         }}
-        className="inline-flex items-center justify-center gap-2 min-h-11 px-5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer active:scale-[0.98] shadow-2xs dark:shadow-none"
+        className="zd-button zd-button--secondary"
       >
-        <Camera className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+        <Camera size={16} />
         <span>Scan Customer QR Code</span>
       </button>
 
       {open && (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#121622] p-4 space-y-3 shadow-xl backdrop-blur-md transition-colors">
-          <div className="flex justify-between items-center">
-            <span className="text-xs font-bold text-slate-900 dark:text-white font-display">Point camera at customer screen</span>
+        <div
+          className="zd-kiosk-card"
+          style={{ marginTop: "16px", padding: "20px", textAlign: "left" }}
+        >
+          <div className="flex justify-between items-center" style={{ marginBottom: "12px" }}>
+            <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+              Point camera at customer screen
+            </span>
             <button
               aria-label="Close scanner"
-              className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 transition cursor-pointer"
+              className="zd-icon-button"
+              style={{ width: "32px", height: "32px", borderRadius: "8px" }}
               onClick={() => setOpen(false)}
             >
-              <X className="w-4 h-4" />
+              <X size={16} />
             </button>
           </div>
-          <video ref={video} muted playsInline className="w-full aspect-video rounded-xl bg-black object-cover border border-slate-200 dark:border-white/10" />
-          {error && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 p-2.5 rounded-lg border border-rose-200 dark:border-rose-500/30">{error}</p>}
+          <video
+            ref={video}
+            muted
+            playsInline
+            style={{ width: "100%", aspectRatio: "16/9", borderRadius: "10px", background: "#000", objectFit: "cover", border: "1px solid var(--line)" }}
+          />
+          {error && (
+            <div role="alert" className="zd-alert-danger" style={{ marginTop: "12px", marginBottom: 0 }}>
+              <span>{error}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
