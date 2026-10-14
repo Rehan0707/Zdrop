@@ -152,10 +152,10 @@ export function DropZone({
           }}
           aria-label="Select documents"
           onClick={() => !disabled && inputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl p-5 sm:p-7 text-center cursor-pointer transition-all duration-200 touch-manipulation ${
+          className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-7 text-center cursor-pointer transition-all duration-200 ${
             isDragging
-              ? "border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-[0_0_24px_rgba(34,197,94,0.3)]"
-              : "border-zinc-300 dark:border-white/15 hover:border-emerald-500/70 hover:bg-emerald-50/20 dark:hover:border-emerald-500/60 dark:hover:bg-white/[0.02] bg-zinc-50/80 dark:bg-[#121214]/80"
+              ? "border-blue-500 dark:border-cyan-400 bg-blue-50/50 dark:bg-cyan-950/30 shadow-[0_0_24px_rgba(37,99,235,0.2)] dark:shadow-[0_0_24px_rgba(6,182,212,0.25)]"
+              : "border-slate-300 dark:border-white/15 hover:border-blue-500 dark:hover:border-cyan-500/50 hover:bg-slate-50 dark:hover:bg-white/[0.02] bg-slate-50/60 dark:bg-[#121622]/60"
           } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
         >
           <input
@@ -168,18 +168,18 @@ export function DropZone({
             disabled={disabled}
           />
 
-          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-2xs">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-50 dark:bg-cyan-950/60 border border-blue-200 dark:border-cyan-500/30 flex items-center justify-center text-blue-600 dark:text-cyan-400 shadow-2xs">
             <UploadCloud className="w-6 h-6" />
           </div>
 
-          <h3 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white mb-1 font-heading">
+          <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1 font-display">
             Tap to select or drop documents
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto mb-3 font-sans">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mb-3 font-sans">
             PDF, DOCX, JPG, or PNG (up to {maxSizeMb}MB each)
           </p>
 
-          <span className="inline-block text-[11px] font-mono font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/70 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/30">
+          <span className="inline-block text-[11px] font-mono font-medium text-blue-700 dark:text-cyan-300 bg-blue-50 dark:bg-cyan-950/70 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-cyan-700/50">
             {files.length}/{maxFiles} files selected
           </span>
         </motion.div>

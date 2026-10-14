@@ -17,17 +17,17 @@ export function ZDropLogo({
   variant = "mark",
 }: ZDropLogoProps) {
   const iconDimensions = {
-    sm: { width: 24, height: 26, wrapper: "w-6 h-6.5" },
-    md: { width: 32, height: 35, wrapper: "w-8 h-8.5" },
-    lg: { width: 40, height: 44, wrapper: "w-10 h-11" },
-    xl: { width: 48, height: 52, wrapper: "w-12 h-13" },
+    sm: { width: 26, height: 28, wrapper: "w-6.5 h-7" },
+    md: { width: 34, height: 37, wrapper: "w-8.5 h-9" },
+    lg: { width: 42, height: 46, wrapper: "w-10.5 h-11.5" },
+    xl: { width: 50, height: 55, wrapper: "w-12.5 h-13.5" },
   }[size];
 
   const fullDimensions = {
-    sm: { width: 92, height: 28 },
-    md: { width: 112, height: 35 },
-    lg: { width: 138, height: 42 },
-    xl: { width: 168, height: 52 },
+    sm: { width: 95, height: 28, wrapper: "h-7 w-auto" },
+    md: { width: 115, height: 34, wrapper: "h-8.5 w-auto" },
+    lg: { width: 140, height: 42, wrapper: "h-10.5 w-auto" },
+    xl: { width: 165, height: 50, wrapper: "h-12.5 w-auto" },
   }[size];
 
   const textStyles = {
@@ -39,22 +39,24 @@ export function ZDropLogo({
 
   if (variant === "full") {
     return (
-      <div className={`relative inline-flex items-center select-none ${className}`}>
-        <Image
-          src="/zdrop-logo-dark.png"
-          alt="ZDrop"
-          width={fullDimensions.width}
-          height={fullDimensions.height}
-          className="hidden dark:block object-contain"
-          priority
-        />
+      <div className={`inline-flex items-center select-none ${className}`}>
+        {/* Light theme full logo */}
         <Image
           src="/zdrop-logo.png"
           alt="ZDrop"
           width={fullDimensions.width}
           height={fullDimensions.height}
-          className="block dark:hidden object-contain"
           priority
+          className={`dark:hidden ${fullDimensions.wrapper} object-contain`}
+        />
+        {/* Dark theme full logo */}
+        <Image
+          src="/zdrop-logo-dark.png"
+          alt="ZDrop"
+          width={fullDimensions.width}
+          height={fullDimensions.height}
+          priority
+          className={`hidden dark:block ${fullDimensions.wrapper} object-contain`}
         />
       </div>
     );
@@ -62,26 +64,25 @@ export function ZDropLogo({
 
   return (
     <div className={`inline-flex items-center gap-2.5 select-none ${className}`}>
-      {/* Official Emerald-Green ZDrop Document Mark */}
+      {/* Cropped ZDrop Icon Mark with Dog-Ear Fold and Drop Arrow */}
       <div className={`relative flex items-center justify-center shrink-0 ${iconDimensions.wrapper}`}>
-        {/* Subtle Ambient Emerald Bloom */}
-        <div className="absolute inset-0 rounded-lg bg-emerald-500/25 blur-md -z-10" />
+        {/* Subtle Ambient Bloom */}
+        <div className="absolute inset-0 rounded-lg bg-blue-500/20 dark:bg-blue-400/25 blur-md -z-10" />
 
         <Image
           src="/zdrop-icon-tight.png"
-          alt="ZDrop"
+          alt="ZDrop Mark"
           width={iconDimensions.width}
           height={iconDimensions.height}
-          style={{ width: "auto", height: "auto" }}
-          className="w-full h-full object-contain drop-shadow-[0_2px_10px_rgba(1,186,87,0.45)]"
           priority
+          className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(10,101,253,0.3)] dark:drop-shadow-[0_2px_12px_rgba(56,189,248,0.35)]"
         />
       </div>
 
       {showText && (
-        <span className={`font-heading font-extrabold tracking-tight text-zinc-900 dark:text-white flex items-center ${textStyles}`}>
-          <span className="text-[#01ba57] font-heading font-black mr-0.5">Z</span>
-          <span className="text-zinc-900 dark:text-white font-heading">Drop</span>
+        <span className={`font-display font-extrabold tracking-tight text-slate-950 dark:text-white flex items-center ${textStyles}`}>
+          <span className="text-[#0a65fd]">Z</span>
+          <span className="text-slate-900 dark:text-white">Drop</span>
         </span>
       )}
     </div>

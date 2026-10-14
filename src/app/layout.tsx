@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { MotionConfig } from "motion/react";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
+import "@/components/auth.css";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],

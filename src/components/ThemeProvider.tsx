@@ -16,18 +16,18 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_KEY = "zdrop-theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Initial read
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initialTheme: Theme = stored || "light";
+    const initialTheme: Theme = stored || "dark";
     setThemeState(initialTheme);
 
     const updateResolved = (t: Theme) => {
-      let active: "dark" | "light" = "light";
+      let active: "dark" | "light" = "dark";
       if (t === "system") {
         active = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       } else {
@@ -60,7 +60,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
     localStorage.setItem(STORAGE_KEY, newTheme);
 
-    let active: "dark" | "light" = "light";
+    let active: "dark" | "light" = "dark";
     if (newTheme === "system") {
       active = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     } else {

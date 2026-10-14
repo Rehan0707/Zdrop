@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
+import { Store, QrCode } from "lucide-react";
 import { SessionData } from "@/lib/types";
 import {
   resolveByAccessCode,
@@ -12,35 +14,19 @@ import { Navbar } from "@/components/Navbar";
 import { KioskEntryView } from "@/views/KioskEntryView";
 import { KioskJobConsole } from "@/components/KioskJobConsole";
 import { Footer } from "@/components/landing/Footer";
-import {
-  CheckCircle2,
-  Store,
-  QrCode,
-  ShieldCheck,
-  UserPlus,
-  LogIn,
-  ArrowRight
-} from "lucide-react";
+import { WavesShaderBackground } from "@/components/WavesShaderBackground";
 import { useAuth } from "@/lib/auth-context";
-import { ShopAuthModal } from "@/components/ShopAuthModal";
 import { ShopQrModal } from "@/components/ShopQrModal";
-import "@/components/kiosk.css";
 
 function KioskContent() {
+  const { shop } = useAuth();
   const searchParams = useSearchParams();
-  const { user, shop } = useAuth();
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPurging, setIsPurging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
-
-  // Shop portal state
-  const [shopAuthOpen, setShopAuthOpen] = useState(false);
-  const [shopAuthTab, setShopAuthTab] = useState<"login" | "register">("login");
-  const [qrModalOpen, setQrModalOpen] = useState(false);
-  const [guestMode, setGuestMode] = useState(false);
-  const [completedCount, setCompletedCount] = useState(0);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   // Auto-resolve code from URL query parameter (from QR code scan)
   useEffect(() => {
@@ -82,7 +68,6 @@ function KioskContent() {
     try {
       await deleteSession(session.id);
       setSession(null);
-      setCompletedCount((prev) => prev + 1);
       setSuccessToast("Job completed. Uploaded files purged permanently.");
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (e) {
@@ -98,147 +83,117 @@ function KioskContent() {
   };
 
   return (
-    <div className="zd-kiosk-page">
+    <div className="relative min-h-[100dvh] flex flex-col bg-[var(--canvas)] text-[var(--text-primary)] transition-colors duration-200 overflow-x-hidden">
+      {/* Animated WebGL "Waves" Shader Background */}
+      <WavesShaderBackground />
+
+      {/* Dynamic Multi-Stop Atmospheric Gradient Background Combo */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden" aria-hidden="true">
+
+        <div className="absolute -top-[15%] left-1/2 -translate-x-1/2 w-[1400px] h-[750px] rounded-full blur-[140px] opacity-75 dark:opacity-45 bg-gradient-to-tr from-blue-500/25 via-cyan-400/30 to-indigo-500/20 dark:from-blue-600/30 dark:via-cyan-500/25 dark:to-indigo-600/20" />
+        <div className="absolute top-[40%] -left-[200px] w-[850px] h-[850px] rounded-full blur-[160px] opacity-60 dark:opacity-25 bg-gradient-to-br from-cyan-400/25 via-blue-500/20 to-transparent dark:from-cyan-500/25 dark:via-blue-600/15 dark:to-transparent" />
+        <div className="absolute -bottom-[10%] left-1/2 -translate-x-1/2 w-[1300px] h-[650px] rounded-full blur-[150px] opacity-70 dark:opacity-35 bg-gradient-to-t from-blue-500/25 via-cyan-400/20 to-emerald-400/15 dark:from-cyan-900/35 dark:via-blue-900/25 dark:to-emerald-950/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(15,23,42,0.04)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.03)_1px,transparent_1px)] [background-size:24px_24px] opacity-80" />
+      </div>
+
       <Navbar currentRole="kiosk" />
 
-      <main id="main-content" className="zd-container zd-kiosk-main">
-        {/* Shop Owner Portal Bar / Authentication Gate */}
-        {shop ? (
-          <div className="zd-shop-header-banner">
-            <div className="zd-shop-header-left">
-              <div className="zd-shop-icon-wrapper">
-                <Store size={22} />
-              </div>
-              <div>
-                <div className="zd-shop-name-row">
-                  <h2>{shop.shopName}</h2>
-                  <span className="zd-shop-code-pill">Code: {shop.shopCode}</span>
-                  <span className="zd-shop-status-pill">
-                    <span className="zd-live-dot" /> Online
-                  </span>
-                </div>
-                <p className="zd-shop-address">{shop.campusAddress}</p>
-              </div>
-            </div>
-
-            <div className="zd-shop-header-right">
-              <button
-                type="button"
-                className="zd-btn zd-btn-secondary zd-shop-qr-btn"
-                onClick={() => setQrModalOpen(true)}
-              >
-                <QrCode size={16} />
-                <span>Counter QR Poster</span>
-              </button>
-              {completedCount > 0 && (
-                <div className="zd-shop-stats-badge">
-                  <span>{completedCount} printed & purged</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : !guestMode && !session ? (
-          <div className="zd-shop-kiosk-gate">
-            <div className="zd-gate-content">
-              <div className="zd-gate-badge">
-                <Store size={18} />
-                <span>Print Shop Portal</span>
-              </div>
-              <h2>Operating a Xerox or Print Shop?</h2>
-              <p>
-                Sign in to your shop account or create one in 30 seconds to get your counter QR code standee and branded kiosk.
-              </p>
-              <div className="zd-gate-actions">
-                <button
-                  type="button"
-                  className="zd-btn zd-btn-primary"
-                  onClick={() => {
-                    setShopAuthTab("login");
-                    setShopAuthOpen(true);
-                  }}
-                >
-                  <LogIn size={16} />
-                  <span>Sign In to Shop Kiosk</span>
-                </button>
-                <button
-                  type="button"
-                  className="zd-btn zd-btn-secondary"
-                  onClick={() => {
-                    setShopAuthTab("register");
-                    setShopAuthOpen(true);
-                  }}
-                >
-                  <UserPlus size={16} />
-                  <span>Create Shop Account</span>
-                </button>
-                <button
-                  type="button"
-                  className="zd-gate-guest-link"
-                  onClick={() => setGuestMode(true)}
-                >
-                  <span>Continue as Guest Operator</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 pt-24 pb-12 sm:pt-28">
         {errorMessage && session && (
-          <p role="alert" className="zd-kiosk-error">
+          <p role="alert" className="p-3 mb-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs text-center">
             {errorMessage}
           </p>
         )}
 
+        {/* Shop Owner Status Banner */}
+        {shop && (
+          <div className="mb-6 p-4 rounded-2xl bg-white/80 dark:bg-[#121622]/80 border border-slate-200 dark:border-white/10 shadow-sm backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-cyan-950/60 border border-blue-200 dark:border-cyan-500/30 text-blue-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                <Store className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-slate-900 dark:text-white font-display">{shop.shopName}</h2>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-cyan-950/60 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-cyan-500/30">
+                    CODE: {shop.shopCode}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{shop.campusAddress}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowQrModal(true)}
+              className="h-9 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition active:scale-95 cursor-pointer"
+            >
+              <QrCode className="w-4 h-4" />
+              <span>Counter QR Standee</span>
+            </button>
+          </div>
+        )}
+
+        {/* Success Toast */}
         {successToast && (
-          <div role="status" className="zd-kiosk-success">
-            <CheckCircle2 size={20} aria-hidden="true" />
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold text-center max-w-md mx-auto shadow-sm dark:shadow-lg backdrop-blur-md">
             {successToast}
           </div>
         )}
 
-        {!session ? (
-          <KioskEntryView
-            onSubmitCode={handleCodeSubmit}
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-            onClearError={() => setErrorMessage(null)}
-          />
-        ) : (
-          <KioskJobConsole
-            session={session}
-            onPrint={() => {}}
-            onCompleteAndPurge={handleCompleteAndPurge}
-            onCancel={handleCancel}
-            isPurging={isPurging}
-          />
-        )}
+        <AnimatePresence mode="wait">
+          {!session ? (
+            <motion.div
+              key="entry"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <KioskEntryView
+                onSubmitCode={handleCodeSubmit}
+                isLoading={isLoading}
+                errorMessage={errorMessage}
+                onClearError={() => setErrorMessage(null)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="job"
+              initial={{ opacity: 0, scale: 0.99 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <KioskJobConsole
+                session={session}
+                onPrint={() => {}}
+                onCompleteAndPurge={handleCompleteAndPurge}
+                onCancel={handleCancel}
+                isPurging={isPurging}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
-      {/* Shop Owner Auth Modal */}
-      <ShopAuthModal
-        isOpen={shopAuthOpen}
-        onClose={() => setShopAuthOpen(false)}
-        defaultTab={shopAuthTab}
-      />
+      <Footer />
 
-      {/* Printable Counter QR Modal */}
+      {/* Printable Counter QR Standee Modal */}
       {shop && (
         <ShopQrModal
           shop={shop}
-          isOpen={qrModalOpen}
-          onClose={() => setQrModalOpen(false)}
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
         />
       )}
-
-      <Footer />
     </div>
   );
 }
 
 export default function KioskPage() {
   return (
-    <Suspense fallback={<div className="zd-kiosk-loading" role="status">Opening the print desk…</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading Kiosk Console…</div>}>
       <KioskContent />
     </Suspense>
   );
