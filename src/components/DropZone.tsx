@@ -66,11 +66,15 @@ export function DropZone({
       const type =
         file.type ||
         extensions[file.name.split(".").pop()?.toLowerCase() || ""];
+      if (type?.includes("wordprocessing")) {
+        setErrorMessage("Restricted printing needs a PDF. Convert this DOCX on your device before uploading.");
+        continue;
+      }
       const isAllowed = allowedTypes.includes(type) && file.size > 0;
 
       if (!isAllowed) {
         setErrorMessage(
-          `"${file.name}" is not a supported format. Please use PDF, DOCX, JPG, or PNG.`,
+          `"${file.name}" is not a supported format. Please use PDF, JPG, or PNG.`,
         );
         continue;
       }
@@ -188,7 +192,7 @@ export function DropZone({
             ref={inputRef}
             type="file"
             multiple
-            accept=".pdf,.docx,.jpg,.jpeg,.png"
+            accept=".pdf,.jpg,.jpeg,.png"
             onChange={handleFileSelect}
             className="hidden"
             disabled={disabled}
@@ -199,7 +203,7 @@ export function DropZone({
           </span>
           <h3>Drop your documents here</h3>
           <p id={descriptionId}>
-            PDF, DOCX, JPG & PNG · {maxFiles} files · {maxSizeMb} MiB each
+            PDF, JPG & PNG · {maxFiles} files · {maxSizeMb} MiB each
           </p>
           <span className="zd-browse">
             Browse files <ArrowUpRight size={14} />

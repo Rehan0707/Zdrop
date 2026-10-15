@@ -17,7 +17,7 @@ const steps = [
   },
   {
     title: "Finish the handoff",
-    text: "The operator confirms printing and deletes the files from ZDrop.",
+    text: "Closing the print dialog automatically deletes the files from ZDrop, even if cancelled.",
     icon: Check,
   },
 ];

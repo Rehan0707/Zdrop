@@ -18,11 +18,6 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
     (reason: string, temporaryShieldMs = 3000) => {
       onAttempt?.(reason);
 
-      // Sanitize clipboard if screenshot was attempted
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText("").catch(() => {});
-      }
-
       setSecurityAlert(
         "A restricted shortcut was detected. The preview is obscured briefly; this cannot block system or external capture tools."
       );
@@ -123,15 +118,6 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "PrintScreen" || e.keyCode === 44) {
-        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-          navigator.clipboard.writeText("").catch(() => {});
-        }
-        triggerSecurityWarning("PrintScreen key release sanitized");
-      }
-    };
-
     // 3. Block the in-page context menu as a casual-copy deterrent.
     const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
@@ -155,7 +141,6 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("keydown", handleKeyDown, true);
-    window.addEventListener("keyup", handleKeyUp, true);
     document.addEventListener("contextmenu", handleContextMenu);
     document.addEventListener("dragstart", handleDragStart);
 
@@ -164,7 +149,6 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("keydown", handleKeyDown, true);
-      window.removeEventListener("keyup", handleKeyUp, true);
       document.removeEventListener("contextmenu", handleContextMenu);
       document.removeEventListener("dragstart", handleDragStart);
       if (alertTimerRef.current) clearTimeout(alertTimerRef.current);

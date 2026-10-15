@@ -1,5 +1,7 @@
 # ZDrop - UI/UX Design Specification
 
+> **Restricted printing update (2026-10-15):** Original downloads and signed read redirects are disabled. Operators receive server-rendered PNG pages; customers do not receive document URLs. PDF/image attachments print together in one temporary frame, then closing or cancelling the dialog triggers automatic deletion. Print-start blocks further retrieval and shortens expiry to two minutes for cleanup recovery. DOCX requires customer-side conversion to PDF; browser printing is limited to 100 selected pages. Screenshots, saving rendered pages and print-to-file cannot be prevented. See README for the current flow; older manual-purge examples below are historical.
+
 > **Reference design update (2026-10-14):** The supplied print-desk screenshot is the current visual reference: warm paper (#f4f5ef), ink (#20271f), lime (#d8f36a), a full-width header, editorial hero, paper-to-printer illustration and bordered upload workbench. Shared styles are in `src/components/print-desk.css`. Mobile stacks the hero and form; dark mode remains available. Current Google sign-in and shop selection are retained: selecting files is local, and sign-in is required before submitting an upload. The original visual specification below is retained for context.
 
 > **Verification:** Typecheck and a production build passed. Existing API, file-format, lifecycle, and all eight auth/shop tests passed against an isolated local copy; auth used the existing mock provider, not live Google OAuth. Browser checks verified desktop layout, 390px/320px widths without horizontal overflow, light/dark themes, local file selection, the sign-in gate, preferences, and real upload/code generation after local development sign-in. Printer hardware and live Google OAuth were not tested in this UI change.
@@ -153,3 +155,9 @@ Typography pairs **Geist** for crisp geometric headlines, monetary rates, and ta
 - **OTP Code Reveal:** Staggered digit flip transition on screen load: each digit animates from `y: 12, opacity: 0` to `y: 0, opacity: 1` with a `0.04s` stagger.
 - **Heartbeat Indicator:** Active session shows a 6px green LED dot that smoothly pulses `opacity: [1, 0.4, 1]` with a 2-second repeat cycle.
 - **Reduced Motion:** If `prefers-reduced-motion` is detected, all transform and scale physics are immediately replaced with simple instant opacity fades.
+
+## Restricted print verification (2026-10-15)
+
+Typecheck, the production build, and the complete API/format/restricted-print/auth/Google-token/pricing/lifecycle suite passed against an isolated local production server. Tests cover actual rendered PDF text and PNG/JPG pages, blocked original downloads, operator-only pages, atomic one-time print start, duplicate finish, aborted-window expiry, physical local-file removal, DOCX rejection, and cloud purge failure/recovery with mock storage. A browser simulation prepared all three pages of a PDF plus image, dispatched a closed/cancelled print event, and verified that print buffers disappeared and the session/files were deleted without manual purge. Live storage services and physical printers were not exercised.
+
+Optional managed mode now hides browser previews and disables browser printing at both the UI and API. The kiosk displays settings and a code for the separate trusted station. See `MANAGED_PRINT_STATION.md` for setup, passing hardware-free verification and the pending physical acceptance checklist. This mode is disabled by default and no OS lockdown or printer has been configured.

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { printPages, PRINT_CLEANUP_MS } from '@/lib/print-policy';
 import { z } from 'zod';
 import { PrintPreferencesSchema, AllowedMimeTypesEnum } from '@/lib/types';
 import { active, byCode, newId, newToken, publicSession, purge, putFile, readSession, reserve, saveSession, withSessionLock, StoredSession, cloudUpload, isCloud, enforceFileNoStore, activateSession } from '@/lib/server/store';
 import { inspectDocument, DocumentError } from '@/lib/server/documents';
 import { rateLimit } from '@/lib/server/rate-limit';
 import { getAuthUserFromCookie } from '@/lib/server/auth';
+import { printMode } from '@/lib/server/print-mode';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 const metadata = z.object({
@@ -73,6 +75,7 @@ async function handle(req: NextRequest, action: string) {
       if (!s) return reply({ error: 'Code not found.' }, 404);
       if (!await active(s)) return reply({ error: 'Code expired or files deleted.' }, 410);
       if (s.status === 'PENDING_UPLOAD') return reply({ error: 'Upload is still in progress.' }, 409);
+      if (s.printStartedAt) return reply({ error: 'This job has already entered its one-time print window.' }, 410);
       s.status = 'ACCESSED';
       s.accessedAt ||= Date.now();
       s.operatorToken ||= newToken();
@@ -88,7 +91,28 @@ async function handle(req: NextRequest, action: string) {
     if (!s || !token || (token !== s.ownerToken && token !== s.operatorToken)) return reply({ error: 'Session access denied.' }, 403);
     const live = await active(s);
     if (action === 'status' && req.method === 'GET') return reply({ session: publicSession(s, token === s.operatorToken ? token : undefined) });
+    if (action === 'print-finish' && req.method === 'POST') {
+      if (printMode() === 'managed') return reply({ error: 'Use the managed station to submit and finish this job.' }, 409);
+      if (token !== s.operatorToken) return reply({ error: 'Operator access required.' }, 403);
+      if (!s.printStartedAt) return reply({ error: 'Start the print window first.' }, 409);
+      if (!live) return reply({ session: publicSession(s) });
+      s.printClosedAt = Date.now();
+      await purge(s, 'OPERATOR_PRINT');
+      return reply({ session: publicSession(s) });
+    }
     if (!live) return reply({ error: 'Session expired or deleted.' }, 410);
+    if (action === 'print-start' && req.method === 'POST') {
+      if (printMode() === 'managed') return reply({ error: 'Use the managed station. Browser printing is disabled.' }, 409);
+      if (token !== s.operatorToken) return reply({ error: 'Operator access required.' }, 403);
+      if (s.printStartedAt || s.status !== 'ACCESSED') return reply({ error: 'This job can only enter one print window.' }, 409);
+      try { printPages(s.files, s.preferences); }
+      catch (error) { return reply({ error: (error as Error).message }, 415); }
+      s.printStartedAt = Date.now();
+      // Revoke further page access immediately and bound cleanup if the browser disappears.
+      s.expiresAt = Math.min(s.expiresAt, Date.now() + PRINT_CLEANUP_MS);
+      await saveSession(s);
+      return reply({ session: publicSession(s) });
+    }
     if (action === 'upload' && req.method === 'POST') {
       if (isCloud) return reply({ error: 'Use direct cloud upload.' }, 409);
       if (token !== s.ownerToken || s.status !== 'PENDING_UPLOAD' || s.uploadSealed) return reply({ error: 'Upload not permitted.' }, 409);
@@ -155,7 +179,7 @@ async function dispatch(req: NextRequest, action: string) {
       const session = await readSession(id);
       if (!session || !token || (token !== session.ownerToken && token !== session.operatorToken)) return reply({ error: 'Session access denied.' }, 403);
     }
-    return (id && action !== 'status') ? await withSessionLock(id, () => handle(req, action)) : await handle(req, action);
+    return id ? await withSessionLock(id, () => handle(req, action)) : await handle(req, action);
   } catch (err) {
     console.error(`[dispatch error ${action}]:`, err);
     return reply({ error: 'Session is busy. Please retry.' }, 409);

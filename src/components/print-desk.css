@@ -3035,3 +3035,13 @@ textarea,
 }
 
 
+
+/* Raster-only temporary printing. Original files are never embedded in a viewer. */
+.zd-raster-preview { border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.zd-raster-page { position:relative; min-height:280px; max-height:560px; overflow:auto; background:var(--surface-soft); display:flex; align-items:center; justify-content:center; padding:18px; }
+.zd-raster-page img { display:block; max-width:100%; height:auto; max-height:520px; object-fit:contain; user-select:none; }
+.zd-raster-page p { padding:28px; text-align:center; }
+.zd-raster-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; background:var(--surface); border-top:1px solid var(--line); font-size:12px; }
+.zd-raster-controls button { font-size:12px; padding:8px 12px; }
+.zd-print-progress { padding:16px; margin:16px 0; border:1px solid var(--line); border-radius:10px; font-size:13px; }
+.zd-restricted-print-frame { position:fixed; left:-20000px; top:0; width:1px; height:1px; border:0; pointer-events:none; }

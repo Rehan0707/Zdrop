@@ -10,7 +10,7 @@ const faqs = [
   {
     question: "When are my files deleted?",
     answer:
-      "Your code expires 15 minutes after upload completes. Expired files are removed during cleanup. You can delete your session sooner, and the operator can confirm printing and delete the job.",
+      "Your code expires 15 minutes after upload completes. Starting printing locks further access and shortens the deadline to two minutes. Closing the print dialog, including Cancel, triggers immediate deletion; scheduled cleanup handles abandoned windows. You can also revoke the session sooner.",
   },
   {
     question: "Can the operator save a copy?",
@@ -20,7 +20,7 @@ const faqs = [
   {
     question: "What can I upload?",
     answer:
-      "Up to three PDF, DOCX, JPG, or PNG files, each up to 25 MiB. PDFs and images have browser previews. DOCX files open in a compatible document app for printing.",
+      "Up to three files, each up to 25 MiB. Restricted printing supports PDF, JPG and PNG, with at most 100 selected pages. Convert DOCX to PDF on your device before printing; original Office files cannot be downloaded here.",
   },
   {
     question: "Do I need to sign in?",

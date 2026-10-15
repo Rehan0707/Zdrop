@@ -18,7 +18,7 @@ export function SolutionFeaturesSection() {
           <article>
             <h3>Bring the files you already have.</h3>
             <p>
-              Send up to three PDFs, Word documents, or images. Each file can be
+              Send up to three PDFs or images. Each file can be
               up to 25 MiB.
             </p>
           </article>

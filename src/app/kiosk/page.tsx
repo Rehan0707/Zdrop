@@ -7,7 +7,7 @@ import { Store, QrCode, BadgePercent } from "lucide-react";
 import { SessionData } from "@/lib/types";
 import {
   resolveByAccessCode,
-  deleteSession,
+  finishPrintSession,
   subscribeToSession,
 } from "@/lib/session-client";
 import { Navbar } from "@/components/Navbar";
@@ -67,12 +67,13 @@ function KioskContent() {
     setIsPurging(true);
     setErrorMessage(null);
     try {
-      await deleteSession(session.id);
+      await finishPrintSession(session.id);
       setSession(null);
-      setSuccessToast("Job completed. ZDrop’s stored copy was deleted.");
+      setSuccessToast("Print access ended. ZDrop’s stored files were deleted. Physical printing is not verified.");
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (e) {
       setErrorMessage((e as Error).message);
+      throw e;
     } finally {
       setIsPurging(false);
     }

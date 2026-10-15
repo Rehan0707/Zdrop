@@ -1,5 +1,7 @@
 # ZDrop - Application Flow & User Journeys
 
+> **Restricted printing update (2026-10-15):** Original downloads and signed read redirects are disabled. Operators receive server-rendered PNG pages; customers do not receive document URLs. PDF/image attachments print together in one temporary frame, then closing or cancelling the dialog triggers automatic deletion. Print-start blocks further retrieval and shortens expiry to two minutes for cleanup recovery. DOCX requires customer-side conversion to PDF; browser printing is limited to 100 selected pages. Screenshots, saving rendered pages and print-to-file cannot be prevented. See README for the current flow; older manual-purge examples below are historical.
+
 > **Document Version:** 1.0.0  
 > **Target Actors:** Customer (Mobile Web POV) & Print Shop Operator (Desktop Kiosk POV)
 

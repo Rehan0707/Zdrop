@@ -8,13 +8,20 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/smoke-test.mjs && node scripts/formats-test.mjs && node scripts/edge-test.mjs && node scripts/auth-test.mjs && node scripts/google-token-test.mjs && node scripts/pricing-test.mjs",
+    "test": "node scripts/station-test.mjs && node scripts/smoke-test.mjs && node scripts/formats-test.mjs && node scripts/restricted-print-test.mjs && node scripts/auth-test.mjs && node scripts/google-token-test.mjs && node scripts/pricing-test.mjs && node scripts/edge-test.mjs",
     "test:auth": "node scripts/auth-test.mjs && node scripts/google-token-test.mjs",
     "test:api": "node scripts/smoke-test.mjs",
     "test:edge": "node scripts/edge-test.mjs",
-    "test:formats": "node scripts/formats-test.mjs"
+    "test:formats": "node scripts/formats-test.mjs",
+    "test:print": "node scripts/restricted-print-test.mjs",
+    "test:station": "node scripts/station-test.mjs",
+    "test:station-api": "node scripts/station-api-test.mjs",
+    "station:check": "node scripts/print-station.mjs --check",
+    "station:run": "node scripts/print-station.mjs",
+    "station:test-sheet": "node scripts/print-acceptance.mjs"
   },
   "dependencies": {
+    "@napi-rs/canvas": "0.1.100",
     "@zxing/browser": "^0.2.1",
     "clsx": "^2.1.1",
     "firebase": "^13.0.0",

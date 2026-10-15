@@ -1,130 +1,124 @@
 "use client";
 
-import React, { RefObject } from "react";
-import { FileMetadata } from "@/lib/types";
-import { ShieldAlert, Lock, FileText, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import type { FileMetadata } from "@/lib/types";
+import { FileText, EyeOff } from "lucide-react";
+import { renderSessionPage } from "@/lib/session-client";
+import { supportsRestrictedPrint } from "@/lib/print-policy";
 
 interface SecureDocumentPreviewProps {
   file: FileMetadata;
-  accessCode: string;
+  sessionId: string;
   isShielded: boolean;
   onUnshield: () => void;
-  previewRef: RefObject<HTMLIFrameElement | null>;
+  disabled?: boolean;
 }
-
 export function SecureDocumentPreview({
   file,
-  accessCode,
+  sessionId,
   isShielded,
   onUnshield,
-  previewRef,
+  disabled,
 }: SecureDocumentPreviewProps) {
-  const isImage = file.type.startsWith("image/");
-  const isPdf = file.type.includes("pdf");
+  const [page, setPage] = useState(1);
+  const [url, setUrl] = useState<string>();
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setPage(1);
+  }, [file.fileId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl: string | undefined;
+    setUrl(undefined);
+    setError("");
+    if (!disabled && supportsRestrictedPrint(file)) {
+      renderSessionPage(
+        sessionId,
+        file.fileId,
+        page,
+        "preview",
+        controller.signal,
+      )
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          objectUrl = URL.createObjectURL(result.blob);
+          setUrl(objectUrl);
+        })
+        .catch((error) => {
+          if (!controller.signal.aborted) setError((error as Error).message);
+        });
+    }
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [sessionId, file.fileId, file.type, page, disabled]);
 
+  if (!supportsRestrictedPrint(file))
+    return (
+      <div className="zd-secure-placeholder">
+        <FileText size={32} />
+        <h3>PDF conversion required</h3>
+        <p>
+          Ask the customer to convert this DOCX to PDF on their device and
+          upload again. Original Office files cannot be downloaded or printed by
+          this restricted browser flow.
+        </p>
+      </div>
+    );
   return (
-    <div
-      className="zd-secure-preview zd-secure-surface"
-      onContextMenu={(e) => e.preventDefault()}
+    <section
+      className="zd-raster-preview"
+      aria-label="Rendered document preview"
+      onContextMenu={(event) => event.preventDefault()}
     >
-      {/* Dynamic Anti-Capture Watermark Grid (Hidden on physical print) */}
-      <div className="zd-secure-watermark" aria-hidden="true">
-        <div className="zd-watermark-track">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="zd-watermark-row">
-              {Array.from({ length: 6 }).map((_, j) => (
-                <span key={j} className="zd-watermark-stamp">
-                  ZDROP PRIVATE PRINT • CODE #{accessCode}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Actual Document Content (Hidden/Blurred during Privacy Shield) */}
-      <div
-        className={`zd-secure-content ${isShielded ? "zd-secure-content--blurred" : ""}`}
-      >
-        {file.previewUrl && isImage ? (
-          <div className="zd-secure-image-wrapper">
-            {/* Transparent Guard Overlay - Intercepts right-clicks and prevents saving */}
-            <div
-              className="zd-secure-guard-overlay"
-              onContextMenu={(e) => e.preventDefault()}
-              onDragStart={(e) => e.preventDefault()}
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={file.previewUrl}
-              alt="Protected document preview"
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              className="zd-secure-img"
-            />
-          </div>
-        ) : file.previewUrl && isPdf ? (
-          <div className="zd-secure-pdf-container">
-            {/* Guard bar over top edge of PDF to prevent accidental toolbar interaction */}
-            <div
-              className="zd-secure-pdf-guard"
-              onContextMenu={(e) => e.preventDefault()}
-            />
-            <iframe
-              ref={previewRef}
-              src={`${file.previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-              title="Secure PDF Print Preview"
-              sandbox="allow-scripts allow-same-origin allow-modals"
-              className="zd-secure-pdf-frame"
-            />
-          </div>
-        ) : (
-          <div className="zd-secure-placeholder">
-            <div className="zd-secure-placeholder-icon">
-              <FileText size={28} />
-            </div>
-            <p className="zd-secure-placeholder-name">{file.name}</p>
-            <div className="zd-secure-placeholder-badge">
-              <Lock size={12} />
-              <span>Office document queued for direct print buffer</span>
-            </div>
-            <p className="zd-secure-placeholder-hint">
-              Open this DOCX in an Office app to print it. The shop computer may retain a downloaded copy; remove it after printing.
-            </p>
-          </div>
+      <div className="zd-raster-page">
+        {url && !disabled && !isShielded && (
+          <img
+            src={url}
+            alt={`Rendered page ${page} of ${file.name}`}
+            draggable={false}
+            onDragStart={(event) => event.preventDefault()}
+          />
         )}
+        {disabled ? (
+          <p>Preview cleared for one-time printing.</p>
+        ) : isShielded ? (
+          <button
+            type="button"
+            className="zd-button zd-button--secondary"
+            onClick={onUnshield}
+          >
+            <EyeOff size={17} />
+            Restore preview
+          </button>
+        ) : error ? (
+          <p role="alert">{error}</p>
+        ) : !url ? (
+          <p role="status">Rendering page…</p>
+        ) : null}
       </div>
-
-      {/* Privacy Shield (Triggered when window loses focus, blur, or screenshot shortcut pressed) */}
-      {isShielded && (
-        <div
-          className="zd-privacy-shield"
-          role="alert"
-          aria-live="assertive"
-          onClick={onUnshield}
+      <div className="zd-raster-controls">
+        <button
+          type="button"
+          className="zd-button zd-button--secondary"
+          disabled={disabled || page <= 1}
+          onClick={() => setPage(page - 1)}
         >
-          <div className="zd-privacy-shield-card">
-            <div className="zd-privacy-shield-icon-wrap">
-              <ShieldAlert size={28} />
-            </div>
-            <h4>Preview obscured temporarily</h4>
-            <p>
-              The preview is temporarily obscured after focus changed or a capture shortcut was detected. This cannot block external capture tools or operating-system screenshots.
-            </p>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onUnshield();
-              }}
-              className="zd-button zd-button--primary zd-privacy-shield-btn"
-            >
-              <EyeOff size={15} />
-              <span>Click to Restore Preview</span>
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+          Previous
+        </button>
+        <span>
+          Page {page} / {file.pageCount || 1}
+        </span>
+        <button
+          type="button"
+          className="zd-button zd-button--secondary"
+          disabled={disabled || page >= (file.pageCount || 1)}
+          onClick={() => setPage(page + 1)}
+        >
+          Next
+        </button>
+      </div>
+    </section>
   );
 }

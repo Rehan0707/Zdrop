@@ -39,7 +39,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
           }}
         >
           {session?.deletionSource === "OPERATOR_PRINT"
-            ? "The operator marked the job complete, and ZDrop removed its stored copy. The operator device, printer queue, and printed pages are outside ZDrop's control."
+            ? "The print window ended, and ZDrop removed its stored files. This does not verify physical printing. System captures and printer copies are outside ZDrop's control."
             : session?.status === "EXPIRED"
             ? "Your session expired, and ZDrop removed its stored copy. Copies already accessed by the operator or printer may still exist."
             : "Your session was revoked, and ZDrop removed its stored copy. Copies already accessed by the operator or printer may still exist."}
@@ -69,7 +69,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
             <span className="zd-receipt-label">DELETION TRIGGER</span>
             <span className="zd-receipt-val" style={{ color: "var(--success)" }}>
               {session?.deletionSource === "OPERATOR_PRINT"
-                ? "Print Completed"
+                ? "Print access ended"
                 : session?.deletionSource === "STUDENT_REVOKE"
                 ? "User Revoked"
                 : "TTL Auto-Purge"}

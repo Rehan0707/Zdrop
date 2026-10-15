@@ -73,7 +73,8 @@ export async function putSupabaseFileBytes(filePath: string, bytes: Buffer, cont
   if (!res.ok) throw new Error(`Supabase file save failed (${res.status})`);
 }
 
-export async function deleteSupabasePrefix(prefix: string): Promise<void> {
+export async function deleteSupabaseFiles(paths: string[]): Promise<void> {
+  if (!paths.length) return;
   const { url, key } = getSupabaseConfig();
   const res = await fetch(`${url}/storage/v1/object/${BUCKET}`, {
     method: 'DELETE',
@@ -82,7 +83,8 @@ export async function deleteSupabasePrefix(prefix: string): Promise<void> {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prefixes: [prefix] }),
+    // Storage remove expects exact object paths, not a recursive directory prefix.
+    body: JSON.stringify({ prefixes: paths }),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Supabase delete failed (${res.status})`);

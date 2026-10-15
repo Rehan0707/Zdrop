@@ -160,7 +160,7 @@ export function OtpDisplayCard({
       <div className="zd-timer-box">
         <div className="flex items-center gap-2">
           <Clock size={16} style={{ color: "var(--text-secondary)" }} />
-          <span>Auto-purges upon print completion or timeout</span>
+          <span>Auto-deletes when the print dialog closes or this timer expires</span>
         </div>
         <span className="zd-timer-val">
           {formatTimeRemaining(secondsRemaining)}

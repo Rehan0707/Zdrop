@@ -95,6 +95,12 @@ export interface SessionData {
   createdAt: number;
   expiresAt: number;
   accessedAt?: number;
+  /** A browser print attempt was started; this does not verify physical printing. */
+  printStartedAt?: number;
+  printClosedAt?: number;
+  printMode?: "browser" | "managed";
+  /** Station submission is not proof of physical printing. */
+  printSubmission?: "SPOOLED" | "CANCELLED" | "FAILED";
   deletedAt?: number;
   deletionSource?: "OPERATOR_PRINT" | "STUDENT_REVOKE" | "TTL_PURGE";
   preferences: PrintPreferences;

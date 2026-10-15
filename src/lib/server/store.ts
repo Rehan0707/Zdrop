@@ -1,6 +1,7 @@
 import 'server-only';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { metadataRpc } from './supabase';
+import { printMode } from './print-mode';
 import { enforceNoStore } from './firebase-storage-policy';
 import { randomInt, randomUUID } from 'node:crypto';
 import { mkdir, readFile, writeFile, rm, readdir, stat } from 'node:fs/promises';
@@ -11,12 +12,15 @@ import {
   getSupabaseSignedUrl,
   getSupabaseFileBytes,
   putSupabaseFileBytes,
-  deleteSupabasePrefix,
+  deleteSupabaseFiles,
 } from './supabase-storage';
 
 export interface StoredSession extends SessionData {
   ownerToken: string;
   operatorToken?: string;
+  stationClaimToken?: string;
+  stationDeliveredPages?: number[];
+  stationSubmitAuthorized?: boolean;
   purging?: boolean;
   uploadSealed?: boolean;
   purgeSource?: SessionData['deletionSource'];
@@ -181,9 +185,9 @@ export async function purge(s: StoredSession, source: StoredSession['deletionSou
   await saveSession(s);
 
   if (isSupabaseStorage) {
-    await deleteSupabasePrefix(`sessions/${s.id}`).catch(() => {});
+    await deleteSupabaseFiles(s.files.map(file => `sessions/${s.id}/${file.fileId}`));
   } else if (isFirebaseStorage) {
-    await firebase().bucket.deleteFiles({ prefix: `sessions/${s.id}/` }).catch(() => {});
+    await firebase().bucket.deleteFiles({ prefix: `sessions/${s.id}/` });
   } else {
     await Promise.all(s.files.map((f) => rm(path.join(root, s.id, f.fileId), { force: true })));
   }
@@ -220,12 +224,14 @@ export async function active(s: StoredSession) {
 
 export function publicSession(s: StoredSession, token?: string): SessionData {
   const { ownerToken, operatorToken, purging, purgeSource, uploadSlots, uploadSealed,
+    stationClaimToken, stationDeliveredPages, stationSubmitAuthorized,
     userId, userEmail, userName, userAvatar, ...result } = s;
   return {
     ...result,
+    printMode: printMode(),
     files: result.files.map((f) => ({
       ...f,
-      previewUrl: token ? `/api/files?sessionId=${s.id}&fileId=${f.fileId}&token=${token}` : undefined,
+      previewUrl: undefined,
     })),
   };
 }

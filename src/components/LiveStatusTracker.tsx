@@ -17,12 +17,12 @@ export function LiveStatusTracker({ status, deletionSource }: LiveStatusTrackerP
     : status === "DELETED" && deletionSource === "STUDENT_REVOKE"
       ? "Session cancelled · ZDrop copy purged"
       : status === "DELETED" && deletionSource === "OPERATOR_PRINT"
-        ? "Operator marked complete · ZDrop copy purged"
+        ? "Print access ended · ZDrop copy purged"
         : status === "DELETED"
           ? "ZDrop copy purged"
           : status === "PRINTED"
             ? "Print reported complete"
-            : "Print job completion and copy purge";
+            : "Print dialog closes · automatic cleanup";
 
   const steps = [
     {
@@ -45,7 +45,7 @@ export function LiveStatusTracker({ status, deletionSource }: LiveStatusTrackerP
       desc: copyPurged
         ? "ZDrop removed its stored copy. Printer output and shop-device copies are outside ZDrop's control."
         : status === "PRINTED"
-          ? "The job was marked complete; ZDrop is finishing its stored-copy cleanup."
+          ? "The print window ended; ZDrop is finishing its stored-copy cleanup."
           : "ZDrop removes its stored copy after the job ends, the customer cancels, or the session expires. Printer and shop-device copies remain outside ZDrop's control.",
       isDone: copyPurged,
       isCurrent: status === "PRINTED" || copyPurged,

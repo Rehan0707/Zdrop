@@ -9,7 +9,13 @@ const create=await fetch(base+'/api/sessions/create',{method:'POST',headers:{'Co
 for(let i=0;i<files.length;i++){const upload=await fetch(base+'/api/sessions/upload?sessionId='+result.session.id+'&fileId='+result.session.files[i].fileId,{method:'POST',headers:{Authorization:'Bearer '+result.token},body:files[i].bytes});assert.equal(upload.status,200,await upload.text());}
 const confirmed=await fetch(base+'/api/sessions/confirm',{method:'POST',headers:{Authorization:'Bearer '+result.token,'Content-Type':'application/json'},body:JSON.stringify({sessionId:result.session.id})});assert.equal(confirmed.status,200);
 const resolveRes=await fetch(base+'/api/sessions/resolve?code='+result.session.accessCode);const operator=await resolveRes.json();assert.equal(resolveRes.status,200,JSON.stringify(operator));assert.equal(operator.session.files.length,3);
-for(let i=0;i<files.length;i++){const response=await fetch(base+operator.session.files[i].previewUrl);assert.equal(response.headers.get('content-type'),files[i].type);assert.deepEqual(Buffer.from(await response.arrayBuffer()),files[i].bytes);if(files[i].name.endsWith('.docx')) assert.match(response.headers.get('content-disposition'),/^attachment/);}
+for(const file of operator.session.files){
+  assert.equal(file.previewUrl, undefined);
+  const page = await fetch(base+'/api/print/page',{method:'POST',headers:{Authorization:'Bearer '+operator.token,'Content-Type':'application/json'},body:JSON.stringify({sessionId:result.session.id,fileId:file.fileId,page:1})});
+  assert.equal(page.status,file.type.includes('wordprocessing')?415:200);
+  if(page.ok) assert.equal(page.headers.get('content-type'),'image/png');
+  assert.equal((await fetch(`${base}/api/files?sessionId=${result.session.id}&fileId=${file.fileId}&token=${operator.token}`)).status,403);
+}
 const deleteRes=await fetch(base+'/api/sessions/delete',{method:'POST',headers:{Authorization:'Bearer '+result.token,'Content-Type':'application/json'},body:JSON.stringify({sessionId:result.session.id})});assert.equal(deleteRes.status,200);
-for(const f of operator.session.files)assert.equal((await fetch(base+f.previewUrl)).status,410);
-console.log('PASS: three-file JPG/PNG/DOCX upload, preview/download response types, native Office download, and deletion of all attachments.');
+for(const f of operator.session.files)assert.equal((await fetch(`${base}/api/files?sessionId=${result.session.id}&fileId=${f.fileId}&token=${operator.token}`)).status,403);
+console.log('PASS: three-file JPG/PNG/DOCX upload, blocked original downloads for every format, and deletion of all attachments.');

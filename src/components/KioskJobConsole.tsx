@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Printer,
-  Trash2,
   FileText,
   ArrowLeft,
   Palette,
@@ -20,17 +19,19 @@ import {
   Banknote,
 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { SessionData, FileMetadata } from "@/lib/types";
+import { SessionData } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { SecureDocumentPreview } from "./SecureDocumentPreview";
 import { useScreenshotProtection } from "@/lib/useScreenshotProtection";
 import { calculatePrintCost, getColorPrintPlan } from "@/lib/pricing";
-import { updateSessionPayment } from "@/lib/session-client";
+import { updateSessionPayment, startPrintSession } from "@/lib/session-client";
+import { preparePrintPacket, runPrintPacket } from "@/lib/restricted-print";
+import { printPages } from "@/lib/print-policy";
 
 interface KioskJobConsoleProps {
   session: SessionData;
   onPrint: () => void;
-  onCompleteAndPurge: () => void;
+  onCompleteAndPurge: () => Promise<void>;
   onCancel: () => void;
   isPurging?: boolean;
 }
@@ -42,15 +43,42 @@ export function KioskJobConsole({
   onCancel,
   isPurging = false,
 }: KioskJobConsoleProps) {
-  const [selectedFile, setSelectedFile] = useState<FileMetadata>(
-    session.files[0]
+  const [selectedFileId, setSelectedFileId] = useState(
+    session.files[0]?.fileId,
   );
-
-  const previewRef = useRef<HTMLIFrameElement>(null);
-  const imagePrintRef = useRef<HTMLIFrameElement>(null);
-  const [confirmPurge, setConfirmPurge] = useState(false);
+  const selectedFile =
+    session.files.find((file) => file.fileId === selectedFileId) ||
+    session.files[0];
+  const [confirmPrint, setConfirmPrint] = useState(false);
+  const closePrintDialog = useCallback(() => setConfirmPrint(false), []);
+  const [phase, setPhase] = useState<
+    "idle" | "preparing" | "printing" | "deleting" | "failed"
+  >("idle");
+  const [printMessage, setPrintMessage] = useState("");
+  const abortPrint = useRef<AbortController | null>(null);
+  const stopPacket = useRef<(() => void) | null>(null);
+  const cleanup = useRef(onCompleteAndPurge);
+  cleanup.current = onCompleteAndPurge;
+  const mounted = useRef(true);
+  const finishing = useRef(false);
+  const managed = session.printMode === "managed";
+  const busy = isPurging || phase !== "idle" || !!session.printStartedAt;
+  let printProblem = "";
+  try {
+    printPages(session.files, session.preferences);
+  } catch (error) {
+    printProblem = (error as Error).message;
+  }
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      abortPrint.current?.abort();
+      stopPacket.current?.();
+    };
+  }, []);
   const [paymentStatus, setPaymentStatus] = useState(
-    session.paymentStatus || "UNPAID"
+    session.paymentStatus || "UNPAID",
   );
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const { preferences } = session;
@@ -58,9 +86,10 @@ export function KioskJobConsole({
   const estimate =
     session.costEstimate ||
     calculatePrintCost(session.files, session.preferences);
-  const colorPrintPlan = preferences.colorMode === "AUTO"
-    ? getColorPrintPlan(session.files, preferences.pageRange)
-    : [];
+  const colorPrintPlan =
+    preferences.colorMode === "AUTO"
+      ? getColorPrintPlan(session.files, preferences.pageRange)
+      : [];
 
   const handleMarkPayment = async (status: "PAID_COUNTER" | "UNPAID") => {
     setIsUpdatingPayment(true);
@@ -78,38 +107,89 @@ export function KioskJobConsole({
   const { isShielded, securityAlert, clearAlert, unshieldManually } =
     useScreenshotProtection({ enabled: true });
 
-  const handlePrintClick = () => {
-    onPrint();
-    if (!selectedFile?.previewUrl) return;
+  const finishAutomatically = async () => {
+    if (finishing.current) return;
+    finishing.current = true;
+    if (mounted.current) {
+      setPhase("deleting");
+      setPrintMessage("Print window ended. Deleting ZDrop’s stored files…");
+    }
+    let error: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await cleanup.current();
+        return;
+      } catch (failure) {
+        error = failure;
+        if (!mounted.current) return;
+        if (attempt < 2)
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * (attempt + 1)),
+          );
+      }
+    }
+    finishing.current = false;
+    if (mounted.current) {
+      setPhase("failed");
+      setPrintMessage(
+        `Deletion could not be confirmed: ${(error as Error).message}. Access is blocked; cleanup will retry at expiry.`,
+      );
+    }
+  };
 
+  const handlePrintClick = async () => {
+    if (managed || busy || printProblem) return;
+    setConfirmPrint(false);
+    setPhase("preparing");
+    setPrintMessage("Preparing one-time print pages…");
+    const controller = new AbortController();
+    abortPrint.current = controller;
+    let started = false;
+    let packet: Awaited<ReturnType<typeof preparePrintPacket>> | undefined;
     try {
-      if (selectedFile.type.startsWith("image/")) {
-        imagePrintRef.current?.contentWindow?.focus();
-        imagePrintRef.current?.contentWindow?.print();
+      packet = await preparePrintPacket(
+        session,
+        controller.signal,
+        (message) => {
+          if (mounted.current) setPrintMessage(message);
+        },
+      );
+      await startPrintSession(session.id);
+      started = true;
+      if (!mounted.current) {
+        packet.dispose();
+        await cleanup.current();
         return;
       }
-      if (selectedFile.type.includes("pdf")) {
-        previewRef.current?.contentWindow?.focus();
-        previewRef.current?.contentWindow?.print();
-        return;
+      onPrint();
+      setPhase("printing");
+      setPrintMessage(
+        "Use the printer dialog. ZDrop files are deleted when it closes, including cancellation.",
+      );
+      stopPacket.current = runPrintPacket(packet, () => {
+        void finishAutomatically();
+      });
+    } catch (error) {
+      packet?.dispose();
+      if (started) {
+        void finishAutomatically();
+      } else if (mounted.current && !controller.signal.aborted) {
+        setPhase("idle");
+        setPrintMessage((error as Error).message);
       }
-      // For other formats (e.g. DOCX), invoke window.print()
-      window.print();
-    } catch {
-      window.print();
     }
   };
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
-        e.preventDefault();
-        handlePrintClick();
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        if (!managed && !busy && !printProblem) setConfirmPrint(true);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedFile, onPrint]);
+  }, [managed, busy, printProblem]);
 
   return (
     <div
@@ -143,6 +223,7 @@ export function KioskJobConsole({
           <button
             type="button"
             onClick={onCancel}
+            disabled={busy}
             className="zd-icon-button"
             aria-label="Back to code entry"
           >
@@ -154,7 +235,9 @@ export function KioskJobConsole({
               <span className="zd-console-code">{session.accessCode}</span>
             </div>
             <p className="zd-console-meta">
-              {session.files.length} document{session.files.length > 1 ? "s" : ""} attached ({formatBytes(session.totalSizeBytes)})
+              {session.files.length} document
+              {session.files.length > 1 ? "s" : ""} attached (
+              {formatBytes(session.totalSizeBytes)})
             </p>
           </div>
         </div>
@@ -176,7 +259,8 @@ export function KioskJobConsole({
           <div className="zd-security-policy-text">
             <strong>Temporary document access:</strong>
             <span>
-              {" "}ZDrop removes its stored copy after the job. The shop computer can still save, photograph, capture, or retain documents through system and printer features.
+              {" "}
+              {managed ? "Managed station required. Document pages and browser printing are disabled here. Enter the code at the trusted print station to submit directly to its configured printer." : "Original downloads are disabled. Only rendered pages reach this browser. Files are deleted after the print dialog closes, including Cancel. System capture and print-to-file remain possible."}
             </span>
           </div>
         </div>
@@ -205,7 +289,11 @@ export function KioskJobConsole({
                 <span>Color Mode</span>
               </div>
               <p className="zd-console-pref-card-val">
-                {preferences.colorMode === "AUTO" ? "Smart page mix" : preferences.colorMode === "BW" ? "Black & White" : "Full Color"}
+                {preferences.colorMode === "AUTO"
+                  ? "Smart page mix"
+                  : preferences.colorMode === "BW"
+                    ? "Black & White"
+                    : "Full Color"}
               </p>
             </div>
 
@@ -216,7 +304,9 @@ export function KioskJobConsole({
                 <span>Print Sides</span>
               </div>
               <p className="zd-console-pref-card-val">
-                {preferences.sides === "DOUBLE" ? "Double-Sided" : "Single-Sided"}
+                {preferences.sides === "DOUBLE"
+                  ? "Double-Sided"
+                  : "Single-Sided"}
               </p>
             </div>
 
@@ -226,24 +316,49 @@ export function KioskJobConsole({
                 <FileSpreadsheet size={15} />
                 <span>Page Selection</span>
               </div>
-              <p className="zd-console-pref-card-val" style={{ fontSize: "16px" }}>
-                {preferences.pageRange === "ALL" ? "All Pages" : `Pages: ${preferences.pageRange}`}
+              <p
+                className="zd-console-pref-card-val"
+                style={{ fontSize: "16px" }}
+              >
+                {preferences.pageRange === "ALL"
+                  ? "All Pages"
+                  : `Pages: ${preferences.pageRange}`}
               </p>
             </div>
           </div>
 
           {preferences.colorMode === "AUTO" && (
             <div className="zd-card-panel" style={{ marginBottom: "20px" }}>
-              <strong style={{ display: "block", marginBottom: "8px" }}>Suggested color print ranges</strong>
+              <strong style={{ display: "block", marginBottom: "8px" }}>
+                Suggested color print ranges
+              </strong>
               {colorPrintPlan.map((plan) => (
-                <p key={plan.fileId} style={{ margin: "6px 0", fontSize: "12px", color: "var(--text-secondary)" }}>
-                  <strong style={{ color: "var(--text-primary)" }}>{plan.name}:</strong>{" "}
+                <p
+                  key={plan.fileId}
+                  style={{
+                    margin: "6px 0",
+                    fontSize: "12px",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  <strong style={{ color: "var(--text-primary)" }}>
+                    {plan.name}:
+                  </strong>{" "}
                   Color {plan.colorRange}; B&amp;W {plan.bwRange}
-                  {plan.needsReview ? " · color analysis unavailable; estimated as color, please check manually" : ""}
+                  {plan.needsReview
+                    ? " · color analysis unavailable; estimated as color, please check manually"
+                    : ""}
                 </p>
               ))}
-              <p style={{ margin: "10px 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
-                Apply the color and B&amp;W ranges in separate printer dialog runs. The page-color estimate is advisory; review each page before printing.
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontSize: "11px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Review these advisory ranges before printing. All pages enter
+                {managed ? "one station job with the configured printer's automatic color setting." : "one print dialog; choose automatic color detection if your printer supports it. ZDrop cannot apply different driver settings to individual pages."}
               </p>
             </div>
           )}
@@ -255,7 +370,7 @@ export function KioskJobConsole({
                 background: "var(--surface-soft)",
                 borderColor: "var(--line)",
                 color: "var(--text-primary)",
-                marginBottom: "20px"
+                marginBottom: "20px",
               }}
             >
               <AlertCircle size={16} />
@@ -286,7 +401,10 @@ export function KioskJobConsole({
               ) : (
                 <span className="zd-payment-status-pill zd-payment-status-pill--pending">
                   <Clock size={13} />
-                  <span>Payment Due: {estimate.currencySymbol}{estimate.totalAmount.toFixed(2)}</span>
+                  <span>
+                    Payment Due: {estimate.currencySymbol}
+                    {estimate.totalAmount.toFixed(2)}
+                  </span>
                 </span>
               )}
             </div>
@@ -294,21 +412,31 @@ export function KioskJobConsole({
             <div className="zd-kiosk-billing-body">
               <div className="zd-kiosk-billing-amount-wrap">
                 <div className="flex items-baseline gap-1">
-                  <span className="zd-kiosk-billing-currency">{estimate.currencySymbol}</span>
-                  <span className="zd-kiosk-billing-amount">{estimate.totalAmount.toFixed(2)}</span>
+                  <span className="zd-kiosk-billing-currency">
+                    {estimate.currencySymbol}
+                  </span>
+                  <span className="zd-kiosk-billing-amount">
+                    {estimate.totalAmount.toFixed(2)}
+                  </span>
                 </div>
-                <span className="zd-kiosk-billing-calc">{estimate.formula}</span>
+                <span className="zd-kiosk-billing-calc">
+                  {estimate.formula}
+                </span>
               </div>
 
               <div className="zd-kiosk-billing-actions">
-                {paymentStatus !== "PAID_ONLINE" && (
-                  paymentStatus === "PAID_COUNTER" ? (
+                {paymentStatus !== "PAID_ONLINE" &&
+                  (paymentStatus === "PAID_COUNTER" ? (
                     <button
                       type="button"
                       onClick={() => handleMarkPayment("UNPAID")}
-                      disabled={isUpdatingPayment}
+                      disabled={isUpdatingPayment || busy}
                       className="zd-button zd-button--secondary"
-                      style={{ fontSize: "12px", minHeight: "36px", padding: "6px 14px" }}
+                      style={{
+                        fontSize: "12px",
+                        minHeight: "36px",
+                        padding: "6px 14px",
+                      }}
                     >
                       <span>Mark as Unpaid</span>
                     </button>
@@ -316,15 +444,22 @@ export function KioskJobConsole({
                     <button
                       type="button"
                       onClick={() => handleMarkPayment("PAID_COUNTER")}
-                      disabled={isUpdatingPayment}
+                      disabled={isUpdatingPayment || busy}
                       className="zd-button zd-button--primary"
-                      style={{ fontSize: "12px", minHeight: "36px", padding: "6px 16px", background: "#059669" }}
+                      style={{
+                        fontSize: "12px",
+                        minHeight: "36px",
+                        padding: "6px 16px",
+                        background: "#059669",
+                      }}
                     >
                       <CheckCircle2 size={15} />
-                      <span>Mark Cash Collected ({estimate.currencySymbol}{estimate.totalAmount.toFixed(2)})</span>
+                      <span>
+                        Mark Cash Collected ({estimate.currencySymbol}
+                        {estimate.totalAmount.toFixed(2)})
+                      </span>
                     </button>
-                  )
-                )}
+                  ))}
               </div>
             </div>
           </div>
@@ -344,13 +479,31 @@ export function KioskJobConsole({
                 <button
                   key={file.fileId}
                   type="button"
-                  onClick={() => setSelectedFile(file)}
+                  onClick={() => setSelectedFileId(file.fileId)}
+                  disabled={busy}
                   className={`zd-console-file-tab ${isSelected ? "zd-console-file-tab--active" : ""}`}
                 >
                   <FileText size={15} />
-                  <span style={{ maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis" }}>{file.name}</span>
-                  <span style={{ font: "11px var(--font-jetbrains), monospace", opacity: 0.7 }}>
-                    ({file.pageCount ? `${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"} · ` : ""}{formatBytes(file.size)})
+                  <span
+                    style={{
+                      maxWidth: "180px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {file.name}
+                  </span>
+                  <span
+                    style={{
+                      font: "11px var(--font-jetbrains), monospace",
+                      opacity: 0.7,
+                    }}
+                  >
+                    (
+                    {file.pageCount
+                      ? `${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"} · `
+                      : ""}
+                    {formatBytes(file.size)})
                   </span>
                 </button>
               );
@@ -358,83 +511,111 @@ export function KioskJobConsole({
           </div>
 
           {/* Secure Preview Box with Anti-Screenshot Watermark and Privacy Shield */}
-          {selectedFile && (
+          {managed ? (
+            <div className="zd-secure-placeholder" role="status">
+              <Lock size={28} />
+              <h3>Print at the managed station</h3>
+              <p>Give the station this code: <strong>{session.accessCode}</strong>. Document pages stay out of this browser. After submission, ZDrop automatically deletes its stored copy. A queued job does not confirm paper output.</p>
+            </div>
+          ) : selectedFile && (
             <SecureDocumentPreview
               file={selectedFile}
-              accessCode={session.accessCode}
+              sessionId={session.id}
               isShielded={isShielded}
               onUnshield={unshieldManually}
-              previewRef={previewRef}
+              disabled={busy}
             />
           )}
         </div>
 
+        {!managed && <>
         {/* Restricted Mode Information Indicator (Replaces old 'Open in new window' download link) */}
         <div className="zd-secure-preview-notice">
           <ShieldCheck size={14} />
           <span>
-            Browser preview only • System screenshots, print-to-file, and printer-spool copies cannot be blocked by this page.
+            Browser preview only • System screenshots, print-to-file, and
+            printer-spool copies cannot be blocked by this page.
           </span>
         </div>
 
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5, margin: "14px 0 16px" }}>
-          Apply customer’s copies, color, sides, and page range in your physical printer dialog. Print all attached documents before finalizing the job.
+        <p
+          style={{
+            fontSize: "12px",
+            color: "var(--text-secondary)",
+            lineHeight: 1.5,
+            margin: "14px 0 16px",
+          }}
+        >
+          All selected pages from every PDF or image are prepared in one print
+          job. Apply copies, color and sides in the printer dialog. Closing or
+          cancelling it ends this job; a two-minute server deadline is the
+          fallback.
         </p>
 
-        {/* Dedicated Hidden Print Buffer for Images */}
-        {selectedFile?.type.startsWith("image/") && (
-          <iframe
-            ref={imagePrintRef}
-            title="Image print buffer"
-            src={selectedFile.previewUrl}
-            className="sr-only"
-          />
+        {printProblem && (
+          <p role="alert" className="zd-alert-danger">
+            {printProblem}
+          </p>
         )}
-
+        {(printMessage || session.printStartedAt) && (
+          <p role="status" className="zd-print-progress">
+            {printMessage ||
+              "One-time print access has started in another window. Further page access is blocked; automatic cleanup is due within two minutes."}
+          </p>
+        )}
         <ConfirmDialog
-          isOpen={confirmPurge}
-          title="Finished printing all documents?"
-          message="Ensure every attached page has physically finished printing. Deleting these files from ZDrop storage is permanent and instantaneous."
-          confirmLabel="Yes, Purge Files"
+          isOpen={confirmPrint}
+          title="Print once, then auto-delete?"
+          message="Every selected page from this job will enter one printer dialog. Closing it—including Cancel—permanently deletes ZDrop’s stored files. Check the printer and payment first. This does not verify physical printing or prevent Save as PDF."
+          confirmLabel="Print & auto-delete"
           onConfirm={() => {
-            setConfirmPurge(false);
-            onCompleteAndPurge();
+            void handlePrintClick();
           }}
-          onCancel={() => setConfirmPurge(false)}
-          isConfirming={isPurging}
+          onCancel={closePrintDialog}
         />
+        </>}
 
         {/* Action Hub */}
         <div className="zd-console-actions">
           <button
             type="button"
             onClick={onCancel}
-            disabled={isPurging}
+            disabled={busy}
             className="zd-button zd-button--secondary"
           >
             Close Terminal
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              flexWrap: "wrap",
+            }}
+          >
             <button
               type="button"
-              onClick={handlePrintClick}
-              disabled={isPurging}
+              onClick={() => setConfirmPrint(true)}
+              disabled={managed || busy || !!printProblem}
               className="zd-button zd-button--primary"
             >
               <Printer size={16} />
-              <span>Print Document (Ctrl+P)</span>
+              <span>{managed ? "Use managed station" : "Print job & auto-delete"}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => setConfirmPurge(true)}
-              disabled={isPurging}
-              className="zd-btn-danger"
-            >
-              <Trash2 size={16} />
-              <span>{isPurging ? "Purging Files..." : "Mark Printed & Purge"}</span>
-            </button>
+            {phase === "failed" && (
+              <button
+                type="button"
+                onClick={() => {
+                  void finishAutomatically();
+                }}
+                disabled={isPurging}
+                className="zd-button zd-button--secondary"
+              >
+                Retry automatic cleanup
+              </button>
+            )}
           </div>
         </div>
       </div>
