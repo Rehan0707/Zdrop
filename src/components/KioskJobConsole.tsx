@@ -510,7 +510,7 @@ export function KioskJobConsole({
             })}
           </div>
 
-          {/* Secure Preview Box with Anti-Screenshot Watermark and Privacy Shield */}
+          {/* Rendered document preview; no branding is added to document pages. */}
           {managed ? (
             <div className="zd-secure-placeholder" role="status">
               <Lock size={28} />
@@ -549,7 +549,7 @@ export function KioskJobConsole({
           All selected pages from every PDF or image are prepared in one print
           job. Apply copies, color and sides in the printer dialog. Closing or
           cancelling it ends this job; a two-minute server deadline is the
-          fallback.
+          fallback. Turn off browser headers and footers for clean pages.
         </p>
 
         {printProblem && (

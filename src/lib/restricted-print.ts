@@ -5,7 +5,7 @@ import { printPages } from "./print-policy";
 import { renderSessionPage } from "./session-client";
 
 export interface PrintPacket {
-  frame: HTMLIFrameElement;
+  container: HTMLDivElement;
   dispose: () => void;
 }
 
@@ -16,30 +16,24 @@ export async function preparePrintPacket(
   progress: (value: string) => void,
 ): Promise<PrintPacket> {
   const pages = printPages(session.files, session.preferences);
-  const frame = document.createElement("iframe");
-  frame.title = "Temporary print pages";
-  frame.className = "zd-restricted-print-frame";
-  frame.setAttribute("aria-hidden", "true");
+  if (document.getElementById("zdrop-document-print"))
+    throw new Error("Another print job is already being prepared.");
+  const container = document.createElement("div");
+  container.id = "zdrop-document-print";
+  container.setAttribute("aria-hidden", "true");
   const urls: string[] = [];
   const dispose = () => {
-    frame.remove();
+    container.remove();
+    delete document.body.dataset.zdropDocumentPrint;
     urls.forEach((url) => URL.revokeObjectURL(url));
     urls.length = 0;
   };
   try {
-    document.body.appendChild(frame);
-    const content = frame.contentDocument;
-    if (!content)
-      throw new Error("Your browser could not create the print window.");
-    content.open();
-    content.write(
-      '<!doctype html><html><head><title>ZDrop print job</title><meta name="referrer" content="no-referrer"></head><body></body></html>',
-    );
-    content.close();
-    const style = content.createElement("style");
-    style.textContent =
-      "html,body{margin:0;padding:0;background:white}section{break-after:page;page-break-after:always}section:last-child{break-after:auto;page-break-after:auto}img{display:block;width:100%;height:100%;object-fit:contain} @media screen{body{visibility:hidden}}";
-    content.head.appendChild(style);
+    // Print a dedicated top-level surface: Safari can otherwise print the
+    // surrounding dashboard when asked to print an off-screen iframe.
+    document.body.appendChild(container);
+    const style = document.createElement("style");
+    container.appendChild(style);
     for (let index = 0; index < pages.length; index++) {
       signal.throwIfAborted();
       progress(`Preparing print pages ${index + 1} of ${pages.length}…`);
@@ -52,22 +46,22 @@ export async function preparePrintPacket(
       );
       const url = URL.createObjectURL(page.blob);
       urls.push(url);
-      const sheet = content.createElement("section");
-      const name = `sheet${index}`;
+      const sheet = document.createElement("section");
+      const name = `zdDocumentSheet${index}`;
       style.textContent += `@page ${name}{size:${page.width}pt ${page.height}pt;margin:0}`;
       sheet.style.page = name;
       sheet.style.width = `${page.width}pt`;
       sheet.style.height = `${page.height}pt`;
-      const image = content.createElement("img");
+      const image = document.createElement("img");
       image.alt = "Print page";
       image.draggable = false;
       image.src = url;
       sheet.appendChild(image);
-      content.body.appendChild(sheet);
+      container.appendChild(sheet);
       await image.decode();
     }
     signal.throwIfAborted();
-    return { frame, dispose };
+    return { container, dispose };
   } catch (error) {
     dispose();
     throw error;
@@ -76,13 +70,18 @@ export async function preparePrintPacket(
 
 /** afterprint includes cancelling the dialog. It never proves physical output. */
 export function runPrintPacket(packet: PrintPacket, closed: () => void) {
-  const target = packet.frame.contentWindow;
-  if (!target) throw new Error("Print window unavailable.");
+  if (!packet.container.isConnected)
+    throw new Error("Print pages are no longer available.");
+  const target = window;
+  const originalTitle = document.title;
+  document.title = "";
+  document.body.dataset.zdropDocumentPrint = "active";
   let ended = false;
   const complete = () => {
     if (ended) return;
     ended = true;
     target.removeEventListener("afterprint", complete);
+    document.title = originalTitle;
     // Blank/remove page buffers before the asynchronous server purge.
     packet.dispose();
     closed();
@@ -97,6 +96,7 @@ export function runPrintPacket(packet: PrintPacket, closed: () => void) {
   }
   return () => {
     target.removeEventListener("afterprint", complete);
+    document.title = originalTitle;
     packet.dispose();
   };
 }

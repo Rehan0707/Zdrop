@@ -1642,43 +1642,6 @@ textarea,
   margin-bottom: 20px;
 }
 
-/* Anti-Capture Watermark Grid */
-.zd-secure-watermark {
-  position: absolute;
-  inset: -50px;
-  pointer-events: none;
-  user-select: none;
-  overflow: hidden;
-  z-index: 6;
-  opacity: 0.14;
-  transform: rotate(-18deg) scale(1.15);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-}
-
-.zd-watermark-track {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  width: 150%;
-}
-
-.zd-watermark-row {
-  display: flex;
-  gap: 48px;
-  white-space: nowrap;
-}
-
-.zd-watermark-stamp {
-  font-family: var(--font-jetbrains), monospace;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
-  text-transform: uppercase;
-}
-
 /* Secure Content Layers */
 .zd-secure-content {
   position: relative;
@@ -2426,43 +2389,6 @@ textarea,
   }
 }
 
-/* Document Print Media Rules */
-@media print {
-  .zd-secure-watermark,
-  .zd-privacy-shield,
-  .zd-screenshot-alert-toast,
-  .zd-security-policy-banner,
-  .zd-secure-preview-notice,
-  .zd-console-header,
-  .zd-console-file-tabs,
-  .zd-console-pref-grid,
-  .zd-console-actions,
-  .zd-navbar,
-  .zd-footer,
-  .zd-shop-banner,
-  .zd-secure-placeholder-hint {
-    display: none !important;
-  }
-
-  .zd-secure-content--blurred {
-    filter: none !important;
-    opacity: 1 !important;
-  }
-
-  .zd-secure-preview {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    min-height: auto !important;
-  }
-
-  .zd-console-card {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-}
-
 /* ==========================================================================
    PRICING CALCULATOR & MICRO-PAYMENTS STYLES
    ========================================================================== */
@@ -3044,4 +2970,52 @@ textarea,
 .zd-raster-controls { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px; background:var(--surface); border-top:1px solid var(--line); font-size:12px; }
 .zd-raster-controls button { font-size:12px; padding:8px 12px; }
 .zd-print-progress { padding:16px; margin:16px 0; border:1px solid var(--line); border-radius:10px; font-size:13px; }
-.zd-restricted-print-frame { position:fixed; left:-20000px; top:0; width:1px; height:1px; border:0; pointer-events:none; }
+#zdrop-document-print { display:none; }
+
+/* Only document pixels enter a customer printout, never the counter UI. */
+@media print {
+  body[data-zdrop-document-print="active"] {
+    margin:0 !important;
+    padding:0 !important;
+    min-height:0 !important;
+    background:white !important;
+    overflow:visible !important;
+  }
+  body[data-zdrop-document-print="active"] > :not(#zdrop-document-print) {
+    display:none !important;
+  }
+  body[data-zdrop-document-print="active"] > #zdrop-document-print {
+    display:block !important;
+    position:static !important;
+    margin:0 !important;
+    padding:0 !important;
+  }
+  #zdrop-document-print,
+  #zdrop-document-print * {
+    visibility:visible !important;
+    filter:none !important;
+    opacity:1 !important;
+  }
+  #zdrop-document-print > section {
+    margin:0;
+    padding:0;
+    break-after:page;
+    page-break-after:always;
+    overflow:hidden;
+  }
+  #zdrop-document-print > section:last-child {
+    break-after:auto;
+    page-break-after:auto;
+  }
+  #zdrop-document-print img {
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+  }
+  /* File > Print must never fall back to printing the dashboard. The
+     intentional shop QR poster has a separate print layout in auth.css. */
+  body:has(.zd-console-card):not([data-zdrop-document-print="active"]):not(:has(#printable-shop-poster)) > * {
+    display:none !important;
+  }
+}
