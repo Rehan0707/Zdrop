@@ -386,6 +386,14 @@ export async function activateSession(s: StoredSession) {
   }
 }
 
+export async function beginPrintSession(s: StoredSession) {
+  if (cloud) {
+    Object.assign(s, await metadataRpc<StoredSession>('zdrop_begin_print', { p_session: s, p_lease: currentLease(s.id) }));
+  } else {
+    await saveSession(s);
+  }
+}
+
 async function closeUploadGrant(id: string) {
   await firebase().db.collection('uploadGrants').doc(id).delete();
 }

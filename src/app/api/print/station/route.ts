@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { printMode, stationAuthorized } from "@/lib/server/print-mode";
-import { active, byCode, getFile, newToken, publicSession, purge, readSession, saveSession, withSessionLock } from "@/lib/server/store";
+import { active, beginPrintSession, byCode, getFile, newToken, publicSession, purge, readSession, saveSession, withSessionLock } from "@/lib/server/store";
 import { printPages, PRINT_CLEANUP_MS } from "@/lib/print-policy";
 import { renderPage } from "@/lib/server/render-page";
 import { rateLimit } from "@/lib/server/rate-limit";
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         session.expiresAt = Math.min(session.expiresAt, Date.now() + PRINT_CLEANUP_MS);
         session.stationClaimToken = newToken();
         session.stationDeliveredPages = [];
-        await saveSession(session);
+        await beginPrintSession(session);
         return reply({ sessionId: session.id, claim: session.stationClaimToken, expiresAt: session.expiresAt, pageCount: pages.length, preferences: { copies: session.preferences.copies, colorMode: session.preferences.colorMode, sides: session.preferences.sides } });
       }
       const page = printPages(session.files, session.preferences)[input.index];

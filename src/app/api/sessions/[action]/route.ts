@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { printPages, PRINT_CLEANUP_MS } from '@/lib/print-policy';
 import { z } from 'zod';
 import { PrintPreferencesSchema, AllowedMimeTypesEnum } from '@/lib/types';
-import { active, byCode, newId, newToken, publicSession, purge, putFile, readSession, reserve, saveSession, withSessionLock, StoredSession, cloudUpload, isCloud, enforceFileNoStore, activateSession } from '@/lib/server/store';
+import { active, byCode, newId, newToken, publicSession, purge, putFile, readSession, reserve, saveSession, withSessionLock, StoredSession, cloudUpload, isCloud, enforceFileNoStore, activateSession, beginPrintSession } from '@/lib/server/store';
 import { inspectDocument, DocumentError } from '@/lib/server/documents';
 import { rateLimit } from '@/lib/server/rate-limit';
 import { getAuthUserFromCookie } from '@/lib/server/auth';
@@ -110,7 +110,7 @@ async function handle(req: NextRequest, action: string) {
       s.printStartedAt = Date.now();
       // Revoke further page access immediately and bound cleanup if the browser disappears.
       s.expiresAt = Math.min(s.expiresAt, Date.now() + PRINT_CLEANUP_MS);
-      await saveSession(s);
+      await beginPrintSession(s);
       return reply({ session: publicSession(s) });
     }
     if (action === 'upload' && req.method === 'POST') {
