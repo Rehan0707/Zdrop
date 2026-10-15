@@ -46,7 +46,7 @@ export function ShopAuthModal({
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [campusAddress, setCampusAddress] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
   const [customCode, setCustomCode] = useState('');
 
   if (!isOpen) return null;
@@ -77,7 +77,7 @@ export function ShopAuthModal({
         email: regEmail,
         password: regPassword,
         phone,
-        campusAddress,
+        campusAddress: shopAddress,
         shopCode: customCode || undefined,
       });
       onSuccess?.();
@@ -142,7 +142,7 @@ export function ShopAuthModal({
                   id="login-email"
                   type="email"
                   required
-                  placeholder="owner@campusprint.com"
+                  placeholder="owner@printshop.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                 />
@@ -193,7 +193,7 @@ export function ShopAuthModal({
                     id="shop-name"
                     type="text"
                     required
-                    placeholder="Campus FastPrint"
+                    placeholder="Neighborhood Print Shop"
                     value={shopName}
                     onChange={(e) => setShopName(e.target.value)}
                   />
@@ -225,7 +225,7 @@ export function ShopAuthModal({
                     id="reg-email"
                     type="email"
                     required
-                    placeholder="print@campus.com"
+                    placeholder="print@shop.com"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                   />
@@ -272,7 +272,7 @@ export function ShopAuthModal({
                   <input
                     id="custom-code"
                     type="text"
-                    placeholder="e.g. CAMPUS1"
+                    placeholder="e.g. PRINT1"
                     value={customCode}
                     onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
                   />
@@ -281,16 +281,16 @@ export function ShopAuthModal({
             </div>
 
             <div className="zd-auth-field">
-              <label htmlFor="campus-address">Campus / Center Location</label>
+              <label htmlFor="shop-location">Shop Address or Service Area</label>
               <div className="zd-auth-input-wrapper">
                 <MapPin size={16} className="zd-auth-field-icon" />
                 <input
-                  id="campus-address"
+                  id="shop-location"
                   type="text"
                   required
-                  placeholder="Main Academic Block, Ground Floor (Opp. Library)"
-                  value={campusAddress}
-                  onChange={(e) => setCampusAddress(e.target.value)}
+                  placeholder="123 Main Street, Downtown"
+                  value={shopAddress}
+                  onChange={(e) => setShopAddress(e.target.value)}
                 />
               </div>
             </div>

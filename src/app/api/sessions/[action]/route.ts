@@ -12,6 +12,7 @@ const metadata = z.object({
   fileSize: z.number().int().positive().max(25 * 1024 * 1024),
   mimeType: AllowedMimeTypesEnum,
   pageCount: z.number().int().positive().max(2000).optional(),
+  colorPages: z.array(z.number().int().positive().max(2000)).max(2000).optional(),
 });
 const createSchema = z.object({
   files: z.array(metadata).min(1).max(3),
@@ -40,6 +41,7 @@ async function handle(req: NextRequest, action: string) {
           size: f.fileSize,
           type: f.mimeType,
           pageCount: typeof f.pageCount === 'number' && f.pageCount > 0 ? f.pageCount : undefined,
+          colorPages: f.colorPages ? [...new Set(f.colorPages)] : undefined,
         })),
         userId: authUser?.id,
         userEmail: authUser?.email,
@@ -109,7 +111,7 @@ async function handle(req: NextRequest, action: string) {
       const { getFile } = await import('@/lib/server/store');
       s.uploadSealed = true; await saveSession(s); // Seal direct uploads before inspecting immutable contents.
       try {
-        for (const f of s.files) { if (isCloud) await enforceFileNoStore(s.id, f.fileId); const bytes = await getFile(s.id, f.fileId); if (bytes.length !== f.size) throw new DocumentError('Upload incomplete or file size mismatch.'); const pages = await inspectDocument(bytes, f.type); if (pages) f.pageCount = pages; }
+        for (const f of s.files) { if (isCloud) await enforceFileNoStore(s.id, f.fileId); const bytes = await getFile(s.id, f.fileId); if (bytes.length !== f.size) throw new DocumentError('Upload incomplete or file size mismatch.'); const pages = await inspectDocument(bytes, f.type); if (pages) { f.pageCount = pages; if (f.colorPages) f.colorPages = f.colorPages.filter(page => page <= pages); } }
         // Update accurate cost estimate now that page counts are verified
         const { calculatePrintCost } = await import('@/lib/pricing');
         const { getShopById } = await import('@/lib/server/shops-store');

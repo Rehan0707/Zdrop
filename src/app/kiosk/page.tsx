@@ -69,7 +69,7 @@ function KioskContent() {
     try {
       await deleteSession(session.id);
       setSession(null);
-      setSuccessToast("Job completed. Uploaded files purged permanently.");
+      setSuccessToast("Job completed. ZDrop’s stored copy was deleted.");
       setTimeout(() => setSuccessToast(null), 3500);
     } catch (e) {
       setErrorMessage((e as Error).message);

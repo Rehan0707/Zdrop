@@ -34,7 +34,7 @@ export function SecureDocumentPreview({
             <div key={i} className="zd-watermark-row">
               {Array.from({ length: 6 }).map((_, j) => (
                 <span key={j} className="zd-watermark-stamp">
-                  ZDROP SECURE PRINT • NO SCREENSHOT • CODE #{accessCode}
+                  ZDROP PRIVATE PRINT • CODE #{accessCode}
                 </span>
               ))}
             </div>
@@ -89,8 +89,7 @@ export function SecureDocumentPreview({
               <span>Office document queued for direct print buffer</span>
             </div>
             <p className="zd-secure-placeholder-hint">
-              Local file downloads are restricted to protect customer privacy.
-              Click &quot;Print Document&quot; below to spool this file to your printer.
+              Open this DOCX in an Office app to print it. The shop computer may retain a downloaded copy; remove it after printing.
             </p>
           </div>
         )}
@@ -108,10 +107,9 @@ export function SecureDocumentPreview({
             <div className="zd-privacy-shield-icon-wrap">
               <ShieldAlert size={28} />
             </div>
-            <h4>Privacy Shield Active</h4>
+            <h4>Preview obscured temporarily</h4>
             <p>
-              Document preview is obscured because window focus was lost or a screen
-              capture tool was detected.
+              The preview is temporarily obscured after focus changed or a capture shortcut was detected. This cannot block external capture tools or operating-system screenshots.
             </p>
             <button
               type="button"

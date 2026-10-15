@@ -42,7 +42,7 @@ export function HeroSection({
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [preferences, setPreferences] = useState<PrintPreferences>({
     copies: 1,
-    colorMode: "BW",
+    colorMode: "AUTO",
     sides: "DOUBLE",
     pageRange: "ALL",
   });

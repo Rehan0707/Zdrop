@@ -38,7 +38,7 @@ export function OtpDisplayCard({
     return () => clearInterval(interval);
   }, [expiresAt]);
 
-  // Generate QR code for counter scanner
+  // Generate the ZDrop job QR for kiosk lookup
   useEffect(() => {
     if (typeof window === "undefined") return;
     const kioskUrl = `${window.location.origin}/kiosk?code=${accessCode}`;
@@ -151,7 +151,7 @@ export function OtpDisplayCard({
             alt="Access QR Code"
           />
           <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>
-            Show this QR to the shop counter camera or barcode scanner
+            Show this ZDrop job QR at the counter, or share the six-digit code
           </p>
         </motion.div>
       )}

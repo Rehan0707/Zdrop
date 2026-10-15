@@ -27,7 +27,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
             margin: "0 0 8px",
           }}
         >
-          Files Permanently Destroyed
+          ZDrop Copy Purged
         </h2>
         <p
           style={{
@@ -39,10 +39,10 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
           }}
         >
           {session?.deletionSource === "OPERATOR_PRINT"
-            ? "The operator marked your print job complete. Your files have been completely shredded from ZDrop storage."
+            ? "The operator marked the job complete, and ZDrop removed its stored copy. The operator device, printer queue, and printed pages are outside ZDrop's control."
             : session?.status === "EXPIRED"
-            ? "Your 15-minute session expired. All uploaded files have been automatically purged by the server TTL."
-            : "Your session was manually revoked. Uploaded files have been purged from storage."}
+            ? "Your session expired, and ZDrop removed its stored copy. Copies already accessed by the operator or printer may still exist."
+            : "Your session was revoked, and ZDrop removed its stored copy. Copies already accessed by the operator or printer may still exist."}
         </p>
       </div>
 
@@ -51,7 +51,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
         <div className="flex items-center justify-between pb-3" style={{ borderBottom: "1px solid var(--line)" }}>
           <div className="flex items-center gap-2 font-bold" style={{ color: "var(--text-primary)" }}>
             <CheckCircle2 size={16} style={{ color: "var(--success)" }} />
-            <span>Zero-Retention Audit Receipt</span>
+            <span>ZDrop Deletion Receipt</span>
           </div>
           <span className="zd-pill-active" style={{ fontSize: "10px", padding: "2px 8px" }}>
             Purged
@@ -62,7 +62,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
           <div className="zd-receipt-item">
             <span className="zd-receipt-label">SESSION CODE</span>
             <span className="zd-receipt-val" style={{ color: "var(--primary-ink)" }}>
-              {session?.accessCode || "482913"}
+              {session?.accessCode || "Unavailable"}
             </span>
           </div>
           <div className="zd-receipt-item">
@@ -76,7 +76,7 @@ export function SuccessView({ session, onReset }: SuccessViewProps) {
             </span>
           </div>
           <div className="zd-receipt-item">
-            <span className="zd-receipt-label">FILES RETAINED</span>
+            <span className="zd-receipt-label">FILES IN ZDROP STORAGE</span>
             <span className="zd-receipt-val">0.00 Bytes</span>
           </div>
           <div className="zd-receipt-item">

@@ -10,12 +10,12 @@ import { GoogleSignInButton } from "./GoogleSignInButton";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavbarProps {
-  currentRole?: "student" | "kiosk";
+  currentRole?: "customer" | "kiosk";
   showSections?: boolean;
 }
 
 export function Navbar({
-  currentRole = "student",
+  currentRole = "customer",
   showSections = true,
 }: NavbarProps) {
   const { user, shop, logout } = useAuth();
@@ -54,7 +54,7 @@ export function Navbar({
         <Link href="/" className="zd-brand" aria-label="ZDrop home">
           <ZDropLogo />
         </Link>
-        {currentRole === "student" && showSections && (
+        {currentRole === "customer" && showSections && (
           <div className="zd-nav-links">
             <a href="#how-it-works">How it works</a>
             <a href="#faq">Good to know</a>
@@ -64,7 +64,7 @@ export function Navbar({
           <div className="zd-nav-roles" aria-label="Choose your workspace">
             <Link
               href="/"
-              aria-current={currentRole === "student" ? "page" : undefined}
+              aria-current={currentRole === "customer" ? "page" : undefined}
             >
               Send files <ArrowUpRight size={14} />
             </Link>

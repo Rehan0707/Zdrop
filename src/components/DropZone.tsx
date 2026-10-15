@@ -5,6 +5,7 @@ import { UploadCloud, AlertCircle, ArrowUpRight } from "lucide-react";
 import { FileMetadata } from "@/lib/types";
 import { FileCard } from "./FileCard";
 import { getClientDocumentPageCount } from "@/lib/client-document";
+import { analyzeImageColor, analyzePdfColorPages } from "@/lib/client-color-analysis";
 
 interface DropZoneProps {
   files: FileMetadata[];
@@ -23,6 +24,7 @@ export function DropZone({
 }: DropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const descriptionId = useId();
 
@@ -84,10 +86,9 @@ export function DropZone({
           ? URL.createObjectURL(file)
           : undefined;
 
-      // Accurately read page count from PDF, DOCX, or Image
-      const pageCount = await getClientDocumentPageCount(file);
-
-      newFiles.push({
+      // Read page count and scan supported pages locally. File bytes never leave the browser for analysis.
+      let pageCount = await getClientDocumentPageCount(file);
+      const metadata: FileMetadata = {
         fileId: "file_" + crypto.randomUUID(),
         name: file.name,
         size: file.size,
@@ -95,10 +96,29 @@ export function DropZone({
         file,
         pageCount,
         previewUrl,
-      });
+      };
+      newFiles.push(metadata);
+      onFilesChange([...newFiles]);
+
+      try {
+        if (type === "application/pdf") {
+          const analysis = await analyzePdfColorPages(file, ({ currentPage, totalPages }) => {
+            setAnalysisMessage(`Checking page color in ${file.name}: page ${currentPage} of ${totalPages}`);
+          });
+          pageCount = analysis.pageCount;
+          newFiles[newFiles.length - 1] = { ...metadata, pageCount, colorPages: analysis.colorPages };
+        } else if (type.startsWith("image/")) {
+          setAnalysisMessage(`Checking ${file.name} for page color`);
+          newFiles[newFiles.length - 1] = { ...metadata, colorPages: await analyzeImageColor(file) };
+        }
+      } catch {
+        // Analysis is an estimate only; unsupported browsers or malformed PDFs remain uploadable.
+      }
+      onFilesChange([...newFiles]);
     }
 
     onFilesChange(newFiles);
+    setAnalysisMessage(null);
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -139,6 +159,11 @@ export function DropZone({
 
   return (
     <div>
+      {analysisMessage && (
+        <p className="text-xs text-blue-700 mb-2" role="status" aria-live="polite">
+          {analysisMessage} on this device
+        </p>
+      )}
       {files.length < maxFiles && (
         <div
           className="zd-upload-zone"

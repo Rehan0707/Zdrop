@@ -7,6 +7,7 @@ export function codeFromQr(value: string, origin?: string): string | null {
   if (/^\d{6}$/.test(value)) return value;
   try {
     const url = new URL(value);
+    if (origin && url.origin !== new URL(origin).origin) return null;
     const code = url.searchParams.get('code');
     const isKioskPath = url.pathname === '/kiosk' || url.pathname.endsWith('/kiosk');
     return isKioskPath && code && /^\d{6}$/.test(code) ? code : null;
@@ -29,7 +30,7 @@ export function QrScanner({ onCode, disabled }: { onCode: (code: string) => void
     const start = async () => {
       try {
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-          throw new Error('Camera scanning requires HTTPS or localhost.');
+          throw new Error('The ZDrop QR reader requires HTTPS or localhost.');
         }
         const { BrowserQRCodeReader } = await import('@zxing/browser');
         const reader = new BrowserQRCodeReader();
@@ -73,7 +74,7 @@ export function QrScanner({ onCode, disabled }: { onCode: (code: string) => void
         className="zd-button zd-button--secondary"
       >
         <Camera size={16} />
-        <span>Scan Customer QR Code</span>
+        <span>Scan ZDrop Job QR</span>
       </button>
 
       {open && (
@@ -83,10 +84,10 @@ export function QrScanner({ onCode, disabled }: { onCode: (code: string) => void
         >
           <div className="flex justify-between items-center" style={{ marginBottom: "12px" }}>
             <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-              Point camera at customer screen
+              Point the kiosk camera at the ZDrop job QR
             </span>
             <button
-              aria-label="Close scanner"
+              aria-label="Close ZDrop QR reader"
               className="zd-icon-button"
               style={{ width: "32px", height: "32px", borderRadius: "8px" }}
               onClick={() => setOpen(false)}

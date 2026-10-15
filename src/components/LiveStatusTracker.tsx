@@ -2,36 +2,53 @@
 
 import { Check, CircleDot, Clock } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { SessionStatus } from "@/lib/types";
+import { SessionData } from "@/lib/types";
 
 interface LiveStatusTrackerProps {
-  status: SessionStatus;
+  status: SessionData["status"];
+  deletionSource?: SessionData["deletionSource"];
 }
 
-export function LiveStatusTracker({ status }: LiveStatusTrackerProps) {
+export function LiveStatusTracker({ status, deletionSource }: LiveStatusTrackerProps) {
   const shouldReduceMotion = useReducedMotion();
+  const copyPurged = status === "DELETED" || status === "EXPIRED";
+  const finalLabel = status === "EXPIRED"
+    ? "Session expired · ZDrop copy purged"
+    : status === "DELETED" && deletionSource === "STUDENT_REVOKE"
+      ? "Session cancelled · ZDrop copy purged"
+      : status === "DELETED" && deletionSource === "OPERATOR_PRINT"
+        ? "Operator marked complete · ZDrop copy purged"
+        : status === "DELETED"
+          ? "ZDrop copy purged"
+          : status === "PRINTED"
+            ? "Print reported complete"
+            : "Print job completion and copy purge";
 
   const steps = [
     {
       id: "UPLOADED",
-      label: "Uploaded & Encrypted",
-      desc: "Files staged in temporary volatile memory",
-      isDone: ["ACTIVE", "ACCESSED", "PRINTED", "DELETED"].includes(status),
+      label: "Upload confirmed",
+      desc: "Files are available to the operator during this temporary session.",
+      isDone: ["ACTIVE", "ACCESSED", "PRINTED", "DELETED", "EXPIRED"].includes(status),
       isCurrent: status === "ACTIVE",
     },
     {
       id: "ACCESSED",
       label: "Accessed by Kiosk Operator",
-      desc: "Shopkeeper verified code & parameters",
-      isDone: ["ACCESSED", "PRINTED", "DELETED"].includes(status),
+      desc: "The operator opened the job using its access code.",
+      isDone: ["ACCESSED", "PRINTED", "DELETED", "EXPIRED"].includes(status),
       isCurrent: status === "ACCESSED",
     },
     {
       id: "PRINTED",
-      label: "Printed & Destroyed",
-      desc: "Hardware print finished, files incinerated",
-      isDone: ["PRINTED", "DELETED"].includes(status),
-      isCurrent: status === "PRINTED" || status === "DELETED",
+      label: finalLabel,
+      desc: copyPurged
+        ? "ZDrop removed its stored copy. Printer output and shop-device copies are outside ZDrop's control."
+        : status === "PRINTED"
+          ? "The job was marked complete; ZDrop is finishing its stored-copy cleanup."
+          : "ZDrop removes its stored copy after the job ends, the customer cancels, or the session expires. Printer and shop-device copies remain outside ZDrop's control.",
+      isDone: copyPurged,
+      isCurrent: status === "PRINTED" || copyPurged,
     },
   ];
 
@@ -40,7 +57,7 @@ export function LiveStatusTracker({ status }: LiveStatusTrackerProps) {
       <div className="flex items-center gap-2 pb-3 mb-4" style={{ borderBottom: "1px solid var(--line)" }}>
         <Clock size={16} style={{ color: "var(--text-secondary)" }} />
         <h4 className="text-xs font-bold uppercase tracking-wider font-mono" style={{ color: "var(--text-primary)", margin: 0 }}>
-          Real-Time Spooling Pipeline
+          Job Status
         </h4>
       </div>
 

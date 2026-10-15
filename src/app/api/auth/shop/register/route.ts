@@ -9,7 +9,7 @@ const RegisterShopSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   phone: z.string().min(7, 'Please enter a valid phone number').max(20),
-  campusAddress: z.string().min(3, 'Please specify campus or location address').max(150),
+  campusAddress: z.string().min(3, 'Please enter the shop address or service area').max(150),
   shopCode: z.string().min(3, 'Shop code must be at least 3 characters').max(20).optional(),
 });
 

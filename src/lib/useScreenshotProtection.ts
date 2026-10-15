@@ -24,7 +24,7 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       }
 
       setSecurityAlert(
-        "🔒 Screen Capture & Download Restricted: Customer documents cannot be saved or recorded under ZDrop privacy policy."
+        "A restricted shortcut was detected. The preview is obscured briefly; this cannot block system or external capture tools."
       );
 
       setIsShielded(true);
@@ -66,7 +66,7 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       }
     };
 
-    // 2. Intercept Screenshot, Screen Record, Save, and DevTools Shortcuts
+    // 2. Detect common shortcuts and obscure the preview as a deterrent; OS-level capture remains possible.
     const handleKeyDown = (e: KeyboardEvent) => {
       // PrintScreen key (Windows / Linux)
       if (e.key === "PrintScreen" || e.keyCode === 44) {
@@ -78,7 +78,7 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
 
       const isModifier = e.metaKey || e.ctrlKey;
 
-      // Mac screenshot shortcuts: Cmd + Shift + 3, Cmd + Shift + 4, Cmd + Shift + 5
+      // Detect common macOS screenshot shortcuts.
       if (e.metaKey && e.shiftKey && (e.key === "3" || e.key === "4" || e.key === "5")) {
         e.preventDefault();
         e.stopPropagation();
@@ -86,7 +86,7 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
         return;
       }
 
-      // Windows Snipping Tool shortcut: Win/Ctrl + Shift + S
+      // Detect common snipping-tool shortcuts.
       if (isModifier && e.shiftKey && (e.key === "S" || e.key === "s")) {
         e.preventDefault();
         e.stopPropagation();
@@ -98,7 +98,7 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       if (isModifier && (e.key === "s" || e.key === "S")) {
         e.preventDefault();
         e.stopPropagation();
-        triggerSecurityWarning("Save shortcut blocked - downloads restricted");
+        triggerSecurityWarning("Save shortcut detected");
         return;
       }
 
@@ -132,18 +132,18 @@ export function useScreenshotProtection(options: ScreenshotProtectionOptions = {
       }
     };
 
-    // 3. Block Context Menu (Right Click) across the protected surface
+    // 3. Block the in-page context menu as a casual-copy deterrent.
     const handleContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest(".zd-console-body") || target?.closest(".zd-secure-surface")) {
         e.preventDefault();
-        setSecurityAlert("🔒 Right-click disabled: Customer documents cannot be saved to disk.");
+        setSecurityAlert("Right-click is disabled here; other ways to save or capture the document may still work.");
         if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
         alertTimerRef.current = setTimeout(() => setSecurityAlert(null), 3000);
       }
     };
 
-    // 4. Block Dragging images/documents out of the browser
+    // 4. Prevent dragging the preview element; this does not prevent other copies.
     const handleDragStart = (e: DragEvent) => {
       const target = e.target as HTMLElement | null;
       if (target?.closest(".zd-secure-surface") || target?.tagName === "IMG" || target?.tagName === "IFRAME") {

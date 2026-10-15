@@ -10,13 +10,13 @@
 
 ## 1. Executive Summary & Vision
 
-In educational campuses, offices, and neighborhood Xerox/copy centers, printing documents is a daily necessity. Currently, students and office workers transmit confidential files (academic assignments, lab journals, resumes with personal identifying information, identity cards, government forms) via unencrypted or persistent consumer channels:
+People use print and copy shops for personal, work, and study documents. Sending files through messaging apps, email, or removable media can leave extra copies on shared devices or expose contact details:
 - WhatsApp Web (leaves downloaded files indefinitely in the operator's `Downloads` folder, exposes personal phone numbers to strangers).
 - Personal Email attachments (exposes personal email addresses, leaves unmanaged inbox clutter).
-- USB Flash Drives (spreads malware/viruses, requires physical dongles or OTG adapters rarely carried by smartphone-first students).
+- USB drives (require physical handoff and can leave unmanaged copies on shared computers).
 - Bluetooth / Quick Share (slow pairing, inconsistent discovery, device clutter).
 
-**ZDrop** solves this with a zero-friction, privacy-first web application. A user drops their files on mobile, configures print preferences, and receives a temporary 6-digit access code (OTP). The Xerox operator opens the ZDrop web kiosk on their desktop browser, enters the 6-digit code, reviews print options, triggers printing, and the file is permanently purged from storage.
+**ZDrop** solves this with a low-friction, privacy-focused web application. A customer uploads files from a phone or computer and configures print preferences, and receives a temporary 6-digit access code (OTP). The print shop opens the ZDrop kiosk, enters the 6-digit code, and reviews the print job. ZDrop removes its stored copy when the job ends or the session expires; copies made by the operator or printer may remain outside ZDrop.
 
 ---
 
@@ -25,55 +25,54 @@ In educational campuses, offices, and neighborhood Xerox/copy centers, printing 
 | Existing Pain Point | Traditional Method (WhatsApp/USB) | ZDrop Solution |
 | :--- | :--- | :--- |
 | **Data Privacy & Retention** | Files sit indefinitely on shop PC hard drives; operator has unrestricted offline access. | Strict Ephemeral Storage: dual-trigger destruction (instant purge on print + 15-minute hard TTL). |
-| **Personal Info Exposure** | Customer phone number or email is exposed to shopkeeper and anyone looking at the screen. | 100% Anonymous: zero personal identifying info requested or stored. |
+| **Personal Info Exposure** | Contact details may be exposed when files are sent through personal chats or email. | The temporary print job does not display the customer's Google profile to the shop operator. |
 | **Communication Errors** | "Print pages 3 to 12, double sided, 2 copies, in B&W" verbally miscommunicated amidst noise. | Structured Print Preferences configured directly on customer's phone and displayed on operator screen. |
 | **Queue Latency** | Operators spend minutes searching WhatsApp chats, downloading, and hunting for files. | Instant OTP access: typing 6 digits immediately loads the exact print job with pre-configured settings. |
-| **Device Friction** | Mobile students lack USB cables or desktop connectivity. | 100% Web-based: runs directly in any modern mobile and desktop browser without app install. |
+| **Device Friction** | Customers may arrive without a computer, cable, or removable drive. | Web-based upload and job lookup work in modern mobile and desktop browsers without an app install. |
 
 ---
 
 ## 3. User Personas & Use Cases
 
-### 3.1 Persona 1: The College Student / Customer (Mobile POV)
-- **Profile:** Rohan, 20, Engineering student with a smartphone.
-- **Context:** Needs to print a 15-page lab report 10 minutes before assignment submission. The campus Xerox shop has a queue of 15 students.
-- **Goals:** Upload files quickly from phone storage, set double-sided B&W print, get an OTP code, hand it over, print immediately, and be 100% assured his file is destroyed afterward.
-- **Frustrations:** Dislikes scanning WhatsApp QR codes on random cyber café machines; worried about personal resume data lingering on public computers.
+### 3.1 Customer (Mobile Web)
+- **Context:** A customer needs to print a work document, personal form, report, or other file at a participating print or copy shop. They may be using a phone or computer.
+- **Goals:** Upload files, choose print settings, share a temporary code or ZDrop QR, and have ZDrop remove its stored copy when the job ends or expires.
+- **Frustrations:** Does not want to share files through persistent chats or leave contact details with an unfamiliar shop.
 
-### 3.2 Persona 2: The Xerox / Print Shop Operator (Desktop Kiosk POV)
-- **Profile:** Ramesh, 42, operates a high-volume copy shop next to campus with 2 PCs and 3 high-speed network printers.
-- **Context:** Processes 200+ print jobs daily. Manages multiple queues with students yelling print instructions over counter noise.
-- **Goals:** A clean, fast, distraction-free desktop interface to enter a code, see exactly what needs to be printed, hit `Ctrl+P` (or one-click print), and clear the queue without disk clutter.
-- **Frustrations:** Hard drive constantly fills up with gigabytes of abandoned student PDFs; frequent reprints caused by misunderstandings of verbal instructions.
+### 3.2 Print or Copy Shop Operator (Kiosk Web)
+- **Context:** An operator handles print jobs at a neighborhood shop, workplace print room, or another participating counter.
+- **Goals:** Enter a temporary code, review files and print settings, print the job, and clear its ZDrop copy promptly.
+- **Frustrations:** Files and instructions can be difficult to track when they arrive through chats, email, or removable media.
 
 ---
 
 ## 4. MVP Scope & Boundaries
 
 ### 4.1 In Scope (Phase 1 MVP)
-1. **Frictionless Anonymous Student Upload**:
-   - Zero login / zero registration required.
+1. **Customer Upload and Print Setup**:
+   - Customers sign in with Google before creating a print job; no phone number is required.
    - Batch upload of up to 3 files per session (PDF, DOCX, JPG/PNG), max 25MB per file.
    - Interactive Print Preferences configuration (copies, B&W vs. Color, Single vs. Double-sided, page range).
 2. **Access Code Engine**:
    - Unique, collision-resistant 6-digit numeric access OTP (e.g., `482913`).
-   - Counter QR code alternative (operator can scan if kiosk camera is present).
+   - ZDrop job QR alternative; the kiosk camera reads this code only.
 3. **Session Lifecycle & Privacy Destruction (Dual-Trigger)**:
-   - **Trigger A (Instant Purge):** Operator clicks "Print & Complete" OR student clicks "Revoke Session" -> Immediate hard deletion of files and metadata.
+   - **Trigger A (Instant Purge):** The operator completes a job or the customer revokes the session -> immediate deletion of ZDrop file contents and session details.
    - **Trigger B (Automated 15-Minute TTL):** Server-side TTL expiration cron / Cloud Function wipes all unprinted files after 15 minutes.
-   - Real-time live status updates on student's mobile screen (`Uploaded` -> `Accessed by Operator` -> `Printed & Destroyed`).
+   - Live status updates on the customer's device (`Uploaded` -> `Accessed by Operator` -> `Printed & Destroyed`).
 4. **Operator Kiosk Web Portal**:
    - Simple desktop web view (`/operator` or `/kiosk`).
    - Large numeric code entry pad.
    - Instant document inspection, preference review card, PDF viewer/preview, and native Print trigger (`window.print()`).
 5. **Responsive Modern UI**:
-   - "Campus Print Flow" design system (Slate-50 background, Electric Blue `#2563EB` accents, Geist/Inter typography).
+   - General print-flow design system (Slate-50 background, Electric Blue `#2563EB` accents, Geist/Inter typography).
 
 ### 4.2 Out of Scope (Post-MVP Roadmap)
 - Integrated online payments (UPI / Razorpay) — deferred to v2.
-- Shopkeeper user authentication / multi-tenant dashboard — MVP uses instant kiosk lookup.
+- Advanced shop-owner permissions, staff roles, and multi-location management.
 - Native mobile application (PWA/web first).
-- Complex cloud print driver hardware integrations (MVP uses browser-native print pipeline).
+- Physical document or ID scanners, scan-to-phone, OCR/PII redaction, and other scanner integrations. The QR reader is only for ZDrop job codes.
+- Complex cloud print-driver hardware integrations (MVP uses the browser-native print pipeline).
 
 ---
 
@@ -86,7 +85,8 @@ In educational campuses, offices, and neighborhood Xerox/copy centers, printing 
 
 ### FR-2: Print Preferences Specification
 - **FR-2.1:** User can specify number of copies (integer between 1 and 99, default 1).
-- **FR-2.2:** User can toggle Color Mode: `Black & White` (default) vs. `Color`.
+- **FR-2.2:** User can choose Color Mode: `Auto` (default), `Black & White`, or `Color`.
+- **FR-2.2a:** Auto mode analyzes PDF and image pages locally, estimates mixed color and B&W pricing, and shows suggested per-file page ranges to the operator. Results are heuristic and require operator review; unsupported formats are estimated as color.
 - **FR-2.3:** User can toggle Print Sides: `Double-Sided (Duplex)` (default) vs. `Single-Sided`.
 - **FR-2.4:** User can define Page Selection: `All Pages` (default) or custom page range string (e.g., `1-5, 8, 11-14`).
 
@@ -96,7 +96,7 @@ In educational campuses, offices, and neighborhood Xerox/copy centers, printing 
 - **FR-3.3:** The system generates a QR code representing the direct operator URL (`https://zdrop.app/kiosk?code=482913`).
 
 ### FR-4: Real-Time Synchronization & Telemetry
-- **FR-4.1:** The student mobile client establishes a real-time listener on the session document.
+- **FR-4.1:** The customer client receives session status updates for the active job.
 - **FR-4.2:** Session states: `ACTIVE` -> `ACCESSED` -> `PRINTED` / `EXPIRED` / `REVOKED`.
 - **FR-4.3:** Live countdown timer accurately ticks down from 900 seconds (15 minutes).
 
@@ -120,10 +120,10 @@ In educational campuses, offices, and neighborhood Xerox/copy centers, printing 
   - Code generation within ≤ 1.5 seconds of file upload completion.
   - Operator code resolution and document display within ≤ 1.0 second.
 - **Reliability & Availability**:
-  - Target 99.9% uptime during peak campus hours (8:00 AM – 8:00 PM IST).
+  - Target 99.9% uptime during the configured service's operating hours.
 - **Security & Privacy**:
   - Transport Layer Security (TLS 1.3) enforced on all traffic.
-  - Zero-retention policy: strictly prohibited from archiving or logging document contents.
+  - Do not log document contents. ZDrop removes its stored copies when a job is completed or expires; copies saved outside ZDrop by an operator or printer are outside its control.
   - Storage bucket permissions restricted: public read disabled; access gated by time-limited signed URLs or server proxy.
 - **Usability & Accessibility**:
   - WCAG 2.1 AA compliant contrast ratios across all buttons and inputs.
@@ -133,7 +133,7 @@ In educational campuses, offices, and neighborhood Xerox/copy centers, printing 
 
 ## 7. Success Metrics & KPIs for MVP
 
-1. **Session Completion Time**: Average time from student arrival to print dispatch < 60 seconds (down from 3-5 minutes via WhatsApp).
+1. **Session Completion Time**: Average time from customer arrival to print dispatch < 60 seconds.
 2. **Privacy Enforcement Rate**: 100% of files deleted within 15 minutes or immediately upon print completion.
 3. **Misprint Reduction**: Zero misprints due to verbal misunderstanding of print preferences.
-4. **Customer Satisfaction Score (CSAT)**: ≥ 90% positive ratings from campus pilot surveys.
+4. **Customer Satisfaction Score (CSAT)**: ≥ 90% positive ratings in customer surveys.

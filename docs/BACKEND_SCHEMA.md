@@ -25,10 +25,10 @@ Document Key: `sessionId` (String format: `ses_<uuidv4>`)
 | `expiresAt` | Timestamp | `createdAt + 15 minutes` | Hard cutoff timestamp for automated purge. |
 | `accessedAt` | Timestamp \| Null | Nullable | Timestamp when operator first validated the OTP. |
 | `deletedAt` | Timestamp \| Null | Nullable | Timestamp when documents were purged from storage. |
-| `deletionSource` | String \| Null | `OPERATOR_PRINT` \| `STUDENT_REVOKE` \| `TTL_PURGE` \| Null | Origin of deletion trigger for auditing. |
+| `deletionSource` | String \| Null | `OPERATOR_PRINT` \| `STUDENT_REVOKE` \| `TTL_PURGE` \| Null | Origin of deletion trigger; `STUDENT_REVOKE` is the persisted legacy value for a customer-requested deletion. |
 | `preferences` | Map (Object) | Embedded Map | User-defined printing configuration. |
 | `preferences.copies` | Integer | Min 1, Max 99 (Default: 1) | Number of physical duplicate sets. |
-| `preferences.colorMode` | String (Enum) | `BW` \| `COLOR` | Black & White vs. Full Color. |
+| `preferences.colorMode` | String (Enum) | `AUTO` \| `BW` \| `COLOR` | Heuristic page-color mix, Black & White, or Full Color. |
 | `preferences.sides` | String (Enum) | `SINGLE` \| `DOUBLE` | Single-sided vs. Duplex print. |
 | `preferences.pageRange` | String | String (`ALL` or e.g. `"1-10, 15"`) | Specific pages to be printed. |
 | `preferences.customerNotes`| String \| Null | Max 120 chars | Optional quick note (e.g., "Staple top-left"). |
@@ -41,6 +41,7 @@ Document Key: `sessionId` (String format: `ses_<uuidv4>`)
 | `files[].sizeBytes` | Integer | Max 26,214,400 (25 MB) | Exact file size. |
 | `files[].mimeType` | String | Allowed MIME enum | `application/pdf`, `application/vnd.openxmlformats...`, `image/jpeg`, `image/png`. |
 | `files[].pageCount` | Integer \| Null | Nullable | Detected page count if available from pre-flight. |
+| `files[].colorPages` | Array<Integer> \| Null | 1-based page numbers, max 2000 | On-device PDF/image color-analysis result; advisory only. Missing means unavailable and is conservatively estimated as color. |
 
 ---
 
@@ -114,7 +115,7 @@ Firestore requires explicit composite indexes for multi-field queries executed b
   ]
 }
 ```
-*Purpose:* Enables rapid $O(1)$ lookup when the Xerox operator submits an OTP:
+*Purpose:* Enables rapid $O(1)$ lookup when the print shop operator submits an access code:
 `where('accessCode', '==', enteredCode).where('status', 'in', ['ACTIVE', 'ACCESSED'])`.
 
 ### Index 2: Automated TTL Purge Index
@@ -162,4 +163,4 @@ Even if the application backend or cron worker temporarily fails, the Google Clo
   }
 }
 ```
-*Note:* Cloud Storage object lifecycle rule runs daily and guarantees that any orphaned temporary blob older than 1 day is permanently purged by the cloud infrastructure directly, satisfying stringent zero-retention compliance.
+*Note:* A Cloud Storage lifecycle rule is intended to remove orphaned temporary blobs older than 1 day. Verify the deployed rule before relying on it; this eventual cleanup is not zero-retention.

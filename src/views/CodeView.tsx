@@ -54,7 +54,7 @@ export function CodeView({
       <PaymentSettlementCard session={session} />
 
       {/* Live Status Progression */}
-      <LiveStatusTracker status={session.status} />
+      <LiveStatusTracker status={session.status} deletionSource={session.deletionSource} />
 
       {/* Preferences Summary Micro-Card */}
       <div className="zd-card-panel text-xs">
@@ -77,7 +77,11 @@ export function CodeView({
           <div className="zd-param-item">
             <span className="zd-param-label">COLOR MODE</span>
             <span className="zd-param-val">
-              {session.preferences.colorMode === "BW" ? "Grayscale (B&W)" : "Full Color"}
+              {session.preferences.colorMode === "AUTO"
+                ? "Smart page mix"
+                : session.preferences.colorMode === "BW"
+                  ? "Grayscale (B&W)"
+                  : "Full Color"}
             </span>
           </div>
           <div className="zd-param-item">

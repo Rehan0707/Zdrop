@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json().catch(() => ({}));
-    const email = body.email || 'student.alex@campus.edu';
-    const name = body.name || 'Alex Student';
+    const email = body.email || 'sample.customer@example.test';
+    const name = body.name || 'Sample Customer';
 
     const profile: UserProfile = {
       id: `usr_${randomUUID()}`,

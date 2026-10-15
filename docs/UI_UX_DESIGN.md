@@ -5,7 +5,7 @@
 > **Verification:** Typecheck and a production build passed. Existing API, file-format, lifecycle, and all eight auth/shop tests passed against an isolated local copy; auth used the existing mock provider, not live Google OAuth. Browser checks verified desktop layout, 390px/320px widths without horizontal overflow, light/dark themes, local file selection, the sign-in gate, preferences, and real upload/code generation after local development sign-in. Printer hardware and live Google OAuth were not tested in this UI change.
 
 > **Document Version:** 1.0.0  
-> **Aesthetic Foundation:** "Campus Print Flow" (Generated via Google Stitch MCP)  
+> **Aesthetic Foundation:** "General Print Flow" (Generated via Google Stitch MCP)
 > **Skill Adherence:** `/design-taste-frontend` Anti-Slop Directives  
 > **Target Devices:** Mobile Web (375px - 430px) & Desktop Kiosk (1280px - 1920px)  
 
@@ -14,7 +14,7 @@
 ## 1. Design Read & Core Dials
 
 ```text
-Reading this as: High-Trust Mobile & Kiosk Document Printing Web Platform for college students and Xerox shop operators, with a clean utilitarian, high-clarity language, leaning toward Tailwind Slate/White surfaces with bold Electric Blue (#2563EB) accents and tactile status chips.
+Reading this as: High-Trust Mobile & Kiosk Document Printing Web Platform for customers and print shop operators, with a clean utilitarian, high-clarity language, leaning toward Tailwind Slate/White surfaces with bold Electric Blue (#2563EB) accents and tactile status chips.
 ```
 
 ### The Three Dials
@@ -65,11 +65,11 @@ Typography pairs **Geist** for crisp geometric headlines, monetary rates, and ta
 
 ## 5. Screen-by-Screen Layout Specifications
 
-### 5.1 Screen 1: Student Mobile Upload & Print Preferences
+### 5.1 Screen 1: Customer Upload & Print Preferences
 - **Viewport:** Mobile (390px × 844px)
 - **Header:**
   - Left: Bold **ZDrop** wordmark in Electric Blue (`#2563EB`).
-  - Right: Micro pill chip with glowing green dot: `🔒 Zero-Retention Storage`.
+  - Right: Micro pill chip with glowing green dot: `🔒 Temporary Storage`.
 - **Module 1: Document Dropzone:**
   - Clean card with dashed border: `border-2 border-dashed border-slate-300 hover:border-blue-500 bg-white`.
   - Icon: Centered cloud upload icon in slate-600.
@@ -93,7 +93,7 @@ Typography pairs **Geist** for crisp geometric headlines, monetary rates, and ta
 
 ---
 
-### 5.2 Screen 2: Student Mobile 6-Digit OTP & Live Privacy Tracker
+### 5.2 Screen 2: Customer 6-Digit OTP & Live Privacy Tracker
 - **Viewport:** Mobile (390px × 844px)
 - **Top Bar:** Back button + "Session Active" status chip.
 - **Hero Card: The Access Code:**
@@ -105,7 +105,7 @@ Typography pairs **Geist** for crisp geometric headlines, monetary rates, and ta
   - Sub-action: Tap to copy code icon + "Tap to enlarge".
 - **Module 2: Counter QR Code:**
   - 140x140px crisp QR code with high error correction.
-  - Caption: *"Or show this QR code to the counter scanner."*
+  - Caption: *"Or show this ZDrop job QR at the counter."*
 - **Module 3: Live Privacy & Queue Status Tracker:**
   - Live Countdown Timer: Card displaying `⏱️ Auto-purges in 14:38` with animated progress ring.
   - Real-Time Step Bar:
@@ -117,17 +117,17 @@ Typography pairs **Geist** for crisp geometric headlines, monetary rates, and ta
 
 ---
 
-### 5.3 Screen 3: Xerox Operator Desktop Kiosk
+### 5.3 Screen 3: Print Shop Operator Desktop Kiosk
 - **Viewport:** Desktop (1440px × 900px)
 - **Header:**
-  - Left: `ZDrop Kiosk Station` + Shop terminal badge (`Terminal #1 · Campus Central`).
+  - Left: `ZDrop Kiosk Station` + Shop terminal badge (`Terminal #1 · Shop Location`).
   - Right: System time + Quick stats (`Today's Jobs: 84 · Active: 1`).
 - **Left Column (40% width): OTP Input Hub:**
   - Card with prominent instructions: *"Enter 6-Digit Customer Code"*
   - 6 large input boxes with auto-focus and instant jump:
     `[ 4 ] [ 8 ] [ 2 ]   [ 9 ] [ 1 ] [ 3 ]`
   - Integrated on-screen numeric keypad for touch kiosks + physical keyboard numpad support.
-  - Camera QR scanner toggle: *"Scan Customer QR"*.
+  - Camera QR reader: *"Scan ZDrop Job QR"*. It reads only the job code, not documents.
 - **Right Column (60% width): Job Review & Print Action Console:**
   - Automatically loads upon 6th digit entered.
   - **Document Inspection Header:**

@@ -14,8 +14,8 @@ ZDrop is built as a unified modern fullstack application utilizing Next.js 15 Ap
 ```mermaid
 flowchart TD
     subgraph Client Tier
-        StudentMobile["Student Smartphone (Mobile Web)"]
-        OperatorDesktop["Xerox Kiosk PC (Desktop Web)"]
+        CustomerMobile["Customer Device (Mobile or Desktop Web)"]
+        OperatorDesktop["Print Shop Kiosk (Desktop Web)"]
     end
 
     subgraph Application Tier [Next.js 15 App Router]
@@ -30,10 +30,10 @@ flowchart TD
         AdminSDK["Firebase Admin SDK (Privileged Storage Deletions)"]
     end
 
-    StudentMobile -->|1. Upload Files| CloudStorage
-    StudentMobile -->|2. Create Session & Settings| RouteHandlers
+    CustomerMobile -->|1. Upload Files| CloudStorage
+    CustomerMobile -->|2. Create Session & Settings| RouteHandlers
     RouteHandlers -->|3. Store Ephemeral Session| Firestore
-    StudentMobile <-->|4. Live Status Listener (onSnapshot)| Firestore
+    CustomerMobile <-->|4. Poll Status API| RouteHandlers
 
     OperatorDesktop -->|5. Lookup 6-Digit Code| RouteHandlers
     RouteHandlers -->|6. Verify & Fetch Signed URLs| Firestore
@@ -53,10 +53,10 @@ flowchart TD
 | Layer | Technology | Specification / Version | Rationale |
 | :--- | :--- | :--- | :--- |
 | **Frontend Framework** | Next.js | 15.x (React 19, TypeScript 5.x) | Fast App Router routing, Server Components for SEO, isolated Client Components for mobile touch events. |
-| **Styling & Design System** | Tailwind CSS v4 | `@tailwindcss/postcss`, "Campus Print Flow" tokens | Modern zero-configuration v4 engine, design tokens matching Stitch MCP guidelines. |
+| **Styling & Design System** | Tailwind CSS v4 | `@tailwindcss/postcss`, "General Print Flow" tokens | Modern zero-configuration v4 engine, design tokens matching Stitch MCP guidelines. |
 | **Animation & Micro-physics** | Motion | `motion/react` | Smooth state transitions, interactive upload drops, spring physics for code reveal. |
 | **Iconography** | Phosphor Icons / Lucide | `@phosphor-icons/react` or `lucide-react` | Standardized stroke width (1.5px), crisp SVG glyphs for file types and print toggles. |
-| **Metadata Database** | Cloud Firestore | NoSQL Document Store | Native client-side real-time synchronization (`onSnapshot`), sub-second write latencies. |
+| **Metadata Database** | Cloud Firestore | NoSQL Document Store | Session records are accessed through server-side API routes; the browser polls status with a session capability token. |
 | **Blob Storage** | Firebase Cloud Storage | Google Cloud Storage Bucket | Scalable ephemeral object storage, resumable chunked uploads, signed download URLs. |
 | **Security & Auth** | Firebase Admin SDK | `firebase-admin` (Node.js runtime) | Zero-trust privileged execution for deletion and secure signed URL generation. |
 | **Document Rendering** | PDF.js / Browser iFrame | Native PDF embedder + `window.print()` | Maximum fidelity rendering without server-side compute overhead. |
@@ -70,7 +70,7 @@ To guarantee zero collisions while maintaining human ease of verbal dictation ac
 - **Collision Mitigation Algorithm**:
   1. Generate cryptographically secure random integer `code` using `crypto.randomInt(100000, 1000000)`.
   2. Perform atomic Firestore query: `db.collection('sessions').where('accessCode', '==', code).where('status', 'in', ['ACTIVE', 'ACCESSED']).limit(1)`.
-  3. If code exists in an active session, retry generation (up to 3 retries). With 15-minute TTL, active concurrency rarely exceeds 1,000 active sessions per campus cluster (collision probability $< 0.1\%$).
+  3. If code exists in an active session, retry generation (up to 3 retries). With 15-minute TTL, active concurrency rarely exceeds 1,000 active sessions per service deployment (collision probability $< 0.1\%$).
   4. Reserve the code within a Firestore transaction.
 
 ---
@@ -127,11 +127,11 @@ Called after client completes uploading binary blobs to Firebase Storage. Activa
   ```
 
 ### 4.3 `GET /api/sessions/resolve?code=482913`
-Invoked by the Xerox Operator desktop kiosk when entering the 6-digit access code.
+Invoked by the print shop operator kiosk when entering the 6-digit access code.
 - **Behavior**:
   - Validates code status (`ACTIVE` or `ACCESSED`).
   - Generates short-lived Firebase Storage Signed URLs (valid for 10 minutes) for each document.
-  - Updates session status in Firestore to `ACCESSED`, triggering real-time UI notification on student's mobile screen.
+  - Updates session status in Firestore to `ACCESSED`, triggering real-time UI notification on customer's device.
 - **Response (200 OK)**:
   ```json
   {
@@ -158,12 +158,12 @@ Invoked by the Xerox Operator desktop kiosk when entering the 6-digit access cod
   ```
 
 ### 4.4 `POST /api/sessions/delete`
-Executed when operator clicks "Mark Printed & Delete Now" OR when student clicks "Revoke Session".
+Executed when operator clicks "Mark Printed & Delete Now" OR when the customer clicks "Revoke Session".
 - **Request Body**:
   ```json
   {
     "sessionId": "ses_9f81a7b2-3c12-4d8e",
-    "source": "OPERATOR" // or "STUDENT"
+    "source": "OPERATOR_PRINT" // or "STUDENT_REVOKE" (legacy customer-revoke value)
   }
   ```
 - **Behavior**:
@@ -215,7 +215,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /sessions/{sessionId} {
-      // Anyone can read if they know the document ID (for student real-time listener)
+      // Anyone can read if they know the document ID (for customer session status updates)
       allow read: if true;
       // All mutations, creations, and deletions are routed strictly via Admin SDK API endpoints
       allow write: if false;

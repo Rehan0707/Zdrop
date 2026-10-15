@@ -24,7 +24,7 @@ import { SessionData, FileMetadata } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { SecureDocumentPreview } from "./SecureDocumentPreview";
 import { useScreenshotProtection } from "@/lib/useScreenshotProtection";
-import { calculatePrintCost } from "@/lib/pricing";
+import { calculatePrintCost, getColorPrintPlan } from "@/lib/pricing";
 import { updateSessionPayment } from "@/lib/session-client";
 
 interface KioskJobConsoleProps {
@@ -58,6 +58,9 @@ export function KioskJobConsole({
   const estimate =
     session.costEstimate ||
     calculatePrintCost(session.files, session.preferences);
+  const colorPrintPlan = preferences.colorMode === "AUTO"
+    ? getColorPrintPlan(session.files, preferences.pageRange)
+    : [];
 
   const handleMarkPayment = async (status: "PAID_COUNTER" | "UNPAID") => {
     setIsUpdatingPayment(true);
@@ -159,7 +162,7 @@ export function KioskJobConsole({
         <div className="flex items-center gap-2">
           <span className="zd-console-status-pill zd-console-status-pill--secure">
             <ShieldCheck size={14} />
-            <span>Print-Only (Anti-Capture Active)</span>
+            <span>Temporary print access</span>
           </span>
         </div>
       </div>
@@ -171,9 +174,9 @@ export function KioskJobConsole({
             <Lock size={18} />
           </div>
           <div className="zd-security-policy-text">
-            <strong>Zero-Storage Customer Privacy Protocol:</strong>
+            <strong>Temporary document access:</strong>
             <span>
-              {" "}This terminal operates in print-only mode. Downloading, saving to disk, right-click exporting, and screen capture/recording are strictly restricted.
+              {" "}ZDrop removes its stored copy after the job. The shop computer can still save, photograph, capture, or retain documents through system and printer features.
             </span>
           </div>
         </div>
@@ -202,7 +205,7 @@ export function KioskJobConsole({
                 <span>Color Mode</span>
               </div>
               <p className="zd-console-pref-card-val">
-                {preferences.colorMode === "BW" ? "Black & White" : "Full Color"}
+                {preferences.colorMode === "AUTO" ? "Smart page mix" : preferences.colorMode === "BW" ? "Black & White" : "Full Color"}
               </p>
             </div>
 
@@ -228,6 +231,22 @@ export function KioskJobConsole({
               </p>
             </div>
           </div>
+
+          {preferences.colorMode === "AUTO" && (
+            <div className="zd-card-panel" style={{ marginBottom: "20px" }}>
+              <strong style={{ display: "block", marginBottom: "8px" }}>Suggested color print ranges</strong>
+              {colorPrintPlan.map((plan) => (
+                <p key={plan.fileId} style={{ margin: "6px 0", fontSize: "12px", color: "var(--text-secondary)" }}>
+                  <strong style={{ color: "var(--text-primary)" }}>{plan.name}:</strong>{" "}
+                  Color {plan.colorRange}; B&amp;W {plan.bwRange}
+                  {plan.needsReview ? " · color analysis unavailable; estimated as color, please check manually" : ""}
+                </p>
+              ))}
+              <p style={{ margin: "10px 0 0", fontSize: "11px", color: "var(--text-secondary)" }}>
+                Apply the color and B&amp;W ranges in separate printer dialog runs. The page-color estimate is advisory; review each page before printing.
+              </p>
+            </div>
+          )}
 
           {preferences.customerNotes && (
             <div
@@ -354,7 +373,7 @@ export function KioskJobConsole({
         <div className="zd-secure-preview-notice">
           <ShieldCheck size={14} />
           <span>
-            Protected Direct-Print Stream • Local file downloads, raw file exports, and screenshots are restricted.
+            Browser preview only • System screenshots, print-to-file, and printer-spool copies cannot be blocked by this page.
           </span>
         </div>
 

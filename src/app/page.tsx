@@ -21,10 +21,10 @@ import { CodeView } from "@/views/CodeView";
 import { SuccessView } from "@/views/SuccessView";
 
 
-type StudentStep = "UPLOAD" | "CODE" | "SUCCESS";
+type CustomerStep = "UPLOAD" | "CODE" | "SUCCESS";
 
-export default function StudentPage() {
-  const [step, setStep] = useState<StudentStep>("UPLOAD");
+export default function CustomerPage() {
+  const [step, setStep] = useState<CustomerStep>("UPLOAD");
   const [session, setSession] = useState<SessionData | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -108,7 +108,7 @@ export default function StudentPage() {
 
   return (
     <div className="zd-app">
-      <Navbar currentRole="student" showSections={step === "UPLOAD"} />
+      <Navbar currentRole="customer" showSections={step === "UPLOAD"} />
 
       <main id="main-content" className="zd-main">
         {error && (

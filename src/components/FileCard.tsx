@@ -2,6 +2,7 @@
 import { FileText, FileImage, X } from "lucide-react";
 import { FileMetadata } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
+import { formatPageRanges } from "@/lib/page-ranges";
 interface FileCardProps {
   file: FileMetadata;
   onRemove: (fileId: string) => void;
@@ -31,7 +32,17 @@ export function FileCard({ file, onRemove, disabled = false }: FileCardProps) {
           {file.pageCount
             ? ` · ${file.pageCount} ${file.pageCount === 1 ? "page" : "pages"} ready to print`
             : ""}
+          {file.colorPages !== undefined && ` · ${file.colorPages.length} color ${file.colorPages.length === 1 ? "page" : "pages"}`}
         </small>
+        {file.colorPages !== undefined ? (
+          <small className="block text-slate-600">
+            {file.colorPages.length
+              ? `Color pages: ${formatPageRanges(file.colorPages)}`
+              : "No color detected; estimated as B&W"}
+          </small>
+        ) : (
+          <small className="block text-slate-500">Page-color analysis unavailable; estimate assumes color</small>
+        )}
       </div>
       <button
         type="button"

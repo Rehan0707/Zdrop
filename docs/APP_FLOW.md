@@ -1,7 +1,7 @@
 # ZDrop - Application Flow & User Journeys
 
 > **Document Version:** 1.0.0  
-> **Target Actors:** Student / Customer (Mobile Web POV) & Xerox Operator (Desktop Kiosk POV)  
+> **Target Actors:** Customer (Mobile Web POV) & Print Shop Operator (Desktop Kiosk POV)
 
 ---
 
@@ -10,26 +10,29 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Student as Student (Mobile Web)
-    actor Operator as Xerox Operator (Desktop Kiosk)
+    actor Customer as Customer (Mobile Web)
+    actor Operator as Print Shop Operator (Desktop Kiosk)
     participant NextAPI as ZDrop API (/api/sessions)
     participant CloudStore as Firebase Storage
     participant Firestore as Cloud Firestore
 
     %% Step 1: Upload & Config
-    Student->>NextAPI: 1. Select files (up to 3) + Set Print Preferences
+    Customer->>NextAPI: 1. Select files (up to 3) + Set Print Preferences
     NextAPI->>Firestore: 2. Create pending session + generate 6-digit OTP
-    NextAPI-->>Student: 3. Return session ID & upload paths
-    Student->>CloudStore: 4. Upload binary blobs directly
-    Student->>NextAPI: 5. Confirm upload completion
+    NextAPI-->>Customer: 3. Return session ID & upload paths
+    Customer->>CloudStore: 4. Upload binary blobs directly
+    Customer->>NextAPI: 5. Confirm upload completion
     NextAPI->>Firestore: 6. Set status = 'ACTIVE', start 15-min countdown
-    Student->>Firestore: 7. Listen to live session status (onSnapshot)
+    Customer->>NextAPI: 7. Poll session status with the session capability token
 
     %% Step 2: In-Person Code Exchange
-    Note over Student,Operator: Student dictates "482913" or displays QR across counter
+    Note over Customer,Operator: Customer dictates "482913" or displays QR across counter
     Operator->>NextAPI: 8. Input 6-digit code on desktop kiosk
     NextAPI->>Firestore: 9. Validate code & update status = 'ACCESSED'
-    Firestore-->>Student: 10. Real-time update: "Operator is reviewing your files"
+    Customer->>NextAPI: 10. Poll for the updated session status
+    NextAPI->>Firestore: Read the authorized session
+    Firestore-->>NextAPI: Current session state
+    NextAPI-->>Customer: "Operator is reviewing your files"
     NextAPI-->>Operator: 11. Return document list, signed URLs, & pre-set preferences
 
     %% Step 3: Print & Hard Deletion
@@ -37,16 +40,19 @@ sequenceDiagram
     Operator->>NextAPI: 13. Click "Print Complete & Delete Now"
     NextAPI->>CloudStore: 14. Purge all files in session directory
     NextAPI->>Firestore: 15. Mark session status = 'DELETED'
-    Firestore-->>Student: 16. Real-time update: "Files permanently deleted! 🔒"
+    Customer->>NextAPI: 16. Poll for the final session status
+    NextAPI->>Firestore: Read the authorized session
+    Firestore-->>NextAPI: Session deleted
+    NextAPI-->>Customer: "ZDrop removed its stored copy"
 ```
 
 ---
 
-## 2. Customer / Student POV Flow (Mobile Web)
+## 2. Customer POV Flow (Mobile Web)
 
 ### Step 1: Frictionless Landing & Drop Zone
 - **Screen:** `zdrop.app` (Mobile Viewport)
-- **Action:** Student visits site on smartphone browser (Safari/Chrome). No account creation, no password, no phone number required.
+- **Action:** Customer opens the site on a phone or computer and signs in with Google before creating a job. No phone number is required.
 - **UI Elements:**
   - High-trust banner: "Drop it. Print it. Done."
   - Dropzone card with upload icon: "Tap to select document (PDF, DOCX, JPG, PNG)".
@@ -57,37 +63,37 @@ sequenceDiagram
 ### Step 2: Print Preferences Configuration
 - Immediately below the dropzone, an intuitive preferences card expands:
   - **Copies Stepper:** `[-] 1 [+]` (with intuitive tap increment).
-  - **Color Mode Segment:** `[Black & White]` (active) / `[Color]`.
+  - **Color Mode Segment:** `[Auto]` (active) / `[Black & White]` / `[Color]`. Auto analyzes PDF and image pages in the browser and displays a heuristic mixed-price estimate; DOCX and unavailable analyses are estimated as color.
   - **Sides Segment:** `[Double-Sided (Duplex)]` (active) / `[Single-Sided]`.
   - **Page Selection:** Radio choice: `(•) All Pages` or `( ) Custom Range: [ e.g. 1-12 ]`.
   - **Optional Note:** Input for quick requests: *"Staple corner"*.
 
 ### Step 3: Code Generation & Ephemeral Session Creation
-- Student taps primary button: **`Generate Access Code`**.
+- Customer taps primary button: **`Generate Access Code`**.
 - File binaries stream directly to Firebase Cloud Storage via secure signed pathways.
 - System registers Firestore document and generates a unique 6-digit OTP (e.g., `4 8 2 9 1 3`).
 
 ### Step 4: Live Access & Real-Time Privacy Tracker
 - The screen transitions smoothly to the **Access Code Display**:
   - Huge, high-contrast monospace code: `4 8 2 9 1 3` with one-tap copy button.
-  - Dynamic QR Code containing deep-link `https://zdrop.app/kiosk?code=482913` for instant counter scanning.
+  - Dynamic QR Code containing deep-link `https://zdrop.app/kiosk?code=482913` for quick job-code lookup.
   - **Live Countdown Timer:** `Expires in 14:48` with a pulsing live green heartbeat dot.
   - **Real-Time Step Indicator**:
     - `[✓] Uploaded` (Done)
     - `[•] Waiting for Operator...` (Pulsing blue)
     - `[ ] Printed & Destroyed` (Pending)
-  - Emergency Action: **`Revoke Session & Delete Files Now`** (Red outline button, allowing student to cancel anytime).
+  - Emergency Action: **`Revoke Session & Delete Files Now`** (Red outline button, allowing customer to cancel anytime).
 
 ### Step 5: Destruction Confirmation
 - The moment the operator completes printing, the Firestore listener detects `status: 'DELETED'`.
 - The screen displays a celebratory privacy confirmation:
-  - *"Done! Your documents were printed and have been permanently purged from ZDrop storage."*
+  - *"Done! ZDrop removed its stored copy. The operator or printer may retain other copies."*
   - Shows anonymous receipt: *"Session duration: 1m 42s · 0 bytes retained."*
   - Clean "Done / Print Another Document" CTA.
 
 ---
 
-## 3. Xerox / Print Shop Operator POV Flow (Desktop Kiosk)
+## 3. Print Shop Operator POV Flow (Desktop Kiosk)
 
 ### Step 1: Kiosk Station Mode
 - **Screen:** `zdrop.app/kiosk` (or `zdrop.app/operator`)
@@ -96,10 +102,10 @@ sequenceDiagram
   - High-visibility header: "ZDrop Kiosk - Fast & Private Document Queue".
   - Large centered OTP input with 6 auto-advancing boxes (`[ ][ ][ ] - [ ][ ][ ]`).
   - Physical keyboard number pad focus active by default (operator doesn't even need a mouse).
-  - Web camera QR scan shortcut button for kiosks equipped with webcams.
+  - Optional kiosk camera reads the generated ZDrop job QR only; it does not capture or scan documents.
 
 ### Step 2: Code Lookup & Pre-Flight Inspection
-- Operator types `482913` or scans QR.
+- Operator types `482913` or reads the generated ZDrop job QR.
 - Within <500ms, the screen transitions to the **Job Inspection Console**:
   - **Summary Banner:**
     - Document Name: `assignment_final.pdf` (12 pages, 2.4 MB)
@@ -117,7 +123,7 @@ sequenceDiagram
 ### Step 4: Instant Destruction & Queue Reset
 - Once the printer spools the pages, operator clicks: **`Mark Printed & Purge Files`** (keyboard shortcut `Enter` or `Esc`).
 - The backend immediately deletes the files from Cloud Storage and updates Firestore.
-- Operator screen shows a brief toast: *"Job completed. Storage cleared."* and immediately resets the 6-digit input box for the next student in line.
+- Operator screen shows a brief toast: *"Job completed. Storage cleared."* and immediately resets the 6-digit input box for the next customer in line.
 
 ---
 
@@ -125,7 +131,7 @@ sequenceDiagram
 
 | Scenario | System Response | Recovery Action |
 | :--- | :--- | :--- |
-| **Expired Code (Student arrives after 15 mins)** | Backend returns `410 Gone`. Operator sees "This code has expired and files were auto-purged." | Student mobile shows "Session Expired due to 15-minute privacy limit". Student re-uploads in 2 taps. |
+| **Expired Code (Customer arrives after 15 mins)** | Backend returns `410 Gone`. Operator sees "This code has expired and files were auto-purged." | Customer mobile shows "Session Expired due to 15-minute privacy limit". Customer re-uploads in 2 taps. |
 | **Paper Jam / Printer Failure** | Operator needs to reprint before files are deleted. | Operator does *not* click "Mark Printed" until physical sheets exit the tray. Files remain accessible until the 15-minute TTL expires. |
-| **Accidental Student Revocation** | Student accidentally hits "Revoke". | Confirmation modal: *"Are you sure? All files will be deleted immediately."* |
-| **Student Network Disconnect** | Mobile loses connection after uploading. | The 6-digit code remains active on the server; the student can still verbally dictate the code displayed on their screen. |
+| **Accidental Customer Revocation** | Customer accidentally hits "Revoke". | Confirmation modal: *"Are you sure? All files will be deleted immediately."* |
+| **Customer Network Disconnect** | Mobile loses connection after uploading. | The 6-digit code remains active on the server; the customer can still verbally dictate the code displayed on their screen. |

@@ -1,4 +1,5 @@
 import { FileMetadata, PrintPreferences, ShopPricing, CostEstimate } from "./types";
+import { parseSelectedPages, formatPageRanges } from "./page-ranges";
 
 export const DEFAULT_PRICING: ShopPricing = {
   bwRate: 2,           // ₹2 per page for B&W
@@ -12,36 +13,33 @@ export const DEFAULT_PRICING: ShopPricing = {
  * Parses a page range string (e.g. "1-5, 8, 10-12") against document total pages.
  */
 export function parsePageRangeCount(pageRange: string, documentPages: number): number {
-  if (!pageRange || pageRange.trim().toUpperCase() === "ALL") {
-    return Math.max(1, documentPages);
-  }
+  return parseSelectedPages(pageRange, documentPages).length;
+}
 
-  const parts = pageRange.split(",");
-  const uniquePages = new Set<number>();
+export function getColorPrintPlan(files: FileMetadata[], pageRange: string) {
+  const totalPages = files.reduce((sum, file) => sum + Math.max(1, file.pageCount || 1), 0);
+  const selectedPages = new Set(parseSelectedPages(pageRange, totalPages));
+  let offset = 0;
 
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (!trimmed) continue;
-    if (trimmed.includes("-")) {
-      const [startStr, endStr] = trimmed.split("-").map((s) => s.trim());
-      const start = parseInt(startStr, 10);
-      const end = parseInt(endStr, 10);
-      if (!isNaN(start) && !isNaN(end) && start > 0) {
-        const from = Math.min(start, end);
-        const to = Math.min(Math.max(start, end), documentPages > 0 ? documentPages : 9999);
-        for (let p = from; p <= to; p++) {
-          uniquePages.add(p);
-        }
-      }
-    } else {
-      const p = parseInt(trimmed, 10);
-      if (!isNaN(p) && p > 0 && (documentPages <= 0 || p <= documentPages)) {
-        uniquePages.add(p);
-      }
+  return files.map((file) => {
+    const pageCount = Math.max(1, file.pageCount || 1);
+    const detectedColorPages = file.colorPages === undefined ? null : new Set(file.colorPages);
+    const colorPages: number[] = [];
+    const bwPages: number[] = [];
+    for (let page = 1; page <= pageCount; page++) {
+      if (!selectedPages.has(offset + page)) continue;
+      if (detectedColorPages === null || detectedColorPages.has(page)) colorPages.push(page);
+      else bwPages.push(page);
     }
-  }
-
-  return uniquePages.size > 0 ? uniquePages.size : Math.max(1, documentPages);
+    offset += pageCount;
+    return {
+      fileId: file.fileId,
+      name: file.name,
+      colorRange: formatPageRanges(colorPages),
+      bwRange: formatPageRanges(bwPages),
+      needsReview: detectedColorPages === null,
+    };
+  });
 }
 
 /**
@@ -62,25 +60,42 @@ export function calculatePrintCost(
     return acc + (file.pageCount && file.pageCount > 0 ? file.pageCount : 1);
   }, 0);
 
-  // 2. Adjust for custom page ranges
-  const effectivePagesPerCopy = parsePageRangeCount(
-    preferences.pageRange,
-    rawDocPages > 0 ? rawDocPages : 1
-  );
+  // Page ranges are expressed against the concatenated documents, matching the estimate.
+  const selectedPages = parseSelectedPages(preferences.pageRange, rawDocPages || 1);
+  const selectedSet = new Set(selectedPages);
+  let documentOffset = 0;
+  let colorPagesPerCopy = 0;
+  let bwPagesPerCopy = 0;
 
-  // 3. Multiplied by number of copies
+  for (const file of files) {
+    const pageCount = Math.max(1, file.pageCount || 1);
+    const detectedColorPages = file.colorPages === undefined ? null : new Set(file.colorPages);
+    for (let page = 1; page <= pageCount; page++) {
+      if (!selectedSet.has(documentOffset + page)) continue;
+      const isColor = preferences.colorMode === "COLOR" ||
+        (preferences.colorMode === "AUTO" && (detectedColorPages === null || detectedColorPages.has(page)));
+      if (isColor) colorPagesPerCopy++;
+      else bwPagesPerCopy++;
+    }
+    documentOffset += pageCount;
+  }
+
+  const effectivePagesPerCopy = colorPagesPerCopy + bwPagesPerCopy;
+
+  // Multiply page classes by the requested number of copies.
   const copies = Math.max(1, preferences.copies || 1);
   const totalPages = effectivePagesPerCopy * copies;
-
-  // 4. Rate per page based on Color vs B&W
-  const isColor = preferences.colorMode === "COLOR";
-  const ratePerPage = isColor ? pricing.colorRate : pricing.bwRate;
-  const subtotal = Math.round(totalPages * ratePerPage * 100) / 100;
+  const colorPages = colorPagesPerCopy * copies;
+  const bwPages = bwPagesPerCopy * copies;
+  const subtotal = Math.round((colorPages * pricing.colorRate + bwPages * pricing.bwRate) * 100) / 100;
+  const ratePerPage = totalPages ? Math.round((subtotal / totalPages) * 100) / 100 : pricing.bwRate;
 
   // 5. Duplex savings (if double-sided discount is configured)
   let discount = 0;
   if (preferences.sides === "DOUBLE" && pricing.duplexDiscount > 0) {
-    const physicalSheets = Math.ceil(effectivePagesPerCopy / 2) * copies;
+    const physicalSheets = preferences.colorMode === "AUTO"
+      ? (Math.ceil(colorPagesPerCopy / 2) + Math.ceil(bwPagesPerCopy / 2)) * copies
+      : Math.ceil(effectivePagesPerCopy / 2) * copies;
     discount = Math.min(subtotal - 1, physicalSheets * pricing.duplexDiscount);
     discount = Math.round(discount * 100) / 100;
   }
@@ -88,17 +103,16 @@ export function calculatePrintCost(
   const totalAmount = Math.max(1, Math.round((subtotal - discount) * 100) / 100);
 
   const sym = pricing.currencySymbol || "₹";
-  const modeLabel = isColor ? "Color" : "B&W";
   const sidesLabel = preferences.sides === "DOUBLE" ? " · 2-Sided" : "";
-  const formula = `${effectivePagesPerCopy} ${
-    effectivePagesPerCopy === 1 ? "page" : "pages"
-  } × ${copies} ${copies === 1 ? "copy" : "copies"} @ ${sym}${ratePerPage.toFixed(
-    2
-  )} (${modeLabel}${sidesLabel})`;
+  const formula = preferences.colorMode === "AUTO"
+    ? `${colorPagesPerCopy} color + ${bwPagesPerCopy} B&W ${effectivePagesPerCopy === 1 ? "page" : "pages"} × ${copies} ${copies === 1 ? "copy" : "copies"} (${sym}${pricing.colorRate.toFixed(2)} color / ${sym}${pricing.bwRate.toFixed(2)} B&W${sidesLabel})`
+    : `${effectivePagesPerCopy} ${effectivePagesPerCopy === 1 ? "page" : "pages"} × ${copies} ${copies === 1 ? "copy" : "copies"} @ ${sym}${ratePerPage.toFixed(2)} (${preferences.colorMode === "COLOR" ? "Color" : "B&W"}${sidesLabel})`;
 
   return {
     totalPages,
     copies,
+    colorPages,
+    bwPages,
     ratePerPage,
     subtotal,
     discount,

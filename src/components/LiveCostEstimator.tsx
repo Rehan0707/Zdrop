@@ -40,6 +40,11 @@ export function LiveCostEstimator({
           <span className="zd-file-page-pill">
             {totalDetectedPages} {totalDetectedPages === 1 ? "page" : "pages"} detected
           </span>
+          {preferences.colorMode === "AUTO" && (
+            <span className="zd-file-page-pill">
+              {estimate.colorPages / estimate.copies} color · {estimate.bwPages / estimate.copies} B&amp;W per copy
+            </span>
+          )}
         </div>
         {shopName ? (
           <span className="zd-cost-shop-pill">
@@ -49,7 +54,7 @@ export function LiveCostEstimator({
         ) : (
           <span className="zd-cost-shop-pill">
             <Tag size={11} />
-            Campus default rates
+            Default print rates
           </span>
         )}
       </div>
@@ -75,7 +80,11 @@ export function LiveCostEstimator({
 
       <div className="zd-cost-estimator-footer">
         <ShieldCheck size={13} />
-        <span>Pre-calculated price locked into your 6-digit access code</span>
+        <span>
+          {preferences.colorMode === "AUTO"
+            ? "On-device page-color estimate; confirm the suggested split at the counter"
+            : "Estimate uses the selected color mode and shop rates"}
+        </span>
       </div>
     </div>
   );

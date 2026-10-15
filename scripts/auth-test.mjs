@@ -28,7 +28,7 @@ async function runTests() {
   const googleRes = await fetch(`${BASE}/api/auth/mock-google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'Rohan Student', email: 'rohan.student@college.edu' })
+    body: JSON.stringify({ name: 'Sample Customer', email: 'rohan@example.test' })
   });
   if (googleRes.status === 404) {
     assert.equal(googleRes.headers.get('set-cookie'), null, 'Production mock auth must not set a cookie');
@@ -36,7 +36,7 @@ async function runTests() {
   } else {
     assert.equal(googleRes.status, 200, 'Development mock Google auth should succeed');
     const googleData = await googleRes.json();
-    assert.equal(googleData.user.email, 'rohan.student@college.edu');
+    assert.equal(googleData.user.email, 'rohan@example.test');
     assert.equal(googleData.user.role, 'user');
     const userCookie = googleRes.headers.get('set-cookie');
     assert.ok(userCookie, 'Auth cookie should be set');
@@ -45,31 +45,31 @@ async function runTests() {
     const me2 = await (await fetch(`${BASE}/api/auth/me`, {
       headers: { cookie: userCookie }
     })).json();
-    assert.equal(me2.user.email, 'rohan.student@college.edu');
+    assert.equal(me2.user.email, 'rohan@example.test');
     assert.equal(me2.user.role, 'user');
     assert.equal(me2.shop, null);
     console.log('✔ Test 3 passed: /api/auth/me returns development user profile');
   }
 
   // 4. Shop owner registration
-  const uniqueCode = `SHOP${Date.now().toString().slice(-4)}`;
+  const uniqueCode = `SHOP${Date.now().toString(36).slice(-6).toUpperCase()}`;
   const regRes = await fetch(`${BASE}/api/auth/shop/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      shopName: 'Campus Xerox & Stationary',
+      shopName: 'Neighborhood Print & Stationery',
       ownerName: 'Ramesh Sharma',
       email: `ramesh.${Date.now()}@xerox.com`,
       password: 'password123',
       phone: '+91 9876543210',
-      campusAddress: 'Library Ground Floor',
+      campusAddress: '123 Main Street, Downtown',
       shopCode: uniqueCode,
     })
   });
   assert.equal(regRes.status, 200, 'Shop registration should succeed');
   const regData = await regRes.json();
   assert.equal(regData.user.role, 'shop_owner');
-  assert.equal(regData.shop.shopName, 'Campus Xerox & Stationary');
+  assert.equal(regData.shop.shopName, 'Neighborhood Print & Stationery');
   assert.equal(regData.shop.shopCode, uniqueCode);
   const shopCookie = regRes.headers.get('set-cookie');
   assert.ok(shopCookie, 'Shop owner auth cookie should be set');
@@ -94,7 +94,7 @@ async function runTests() {
   // 7. Get shop by code
   const shopByCode = await (await fetch(`${BASE}/api/shops/${uniqueCode}`)).json();
   assert.equal(shopByCode.shop.shopCode, uniqueCode);
-  assert.equal(shopByCode.shop.shopName, 'Campus Xerox & Stationary');
+  assert.equal(shopByCode.shop.shopName, 'Neighborhood Print & Stationery');
   console.log('✔ Test 7 passed: /api/shops/[code] finds shop by code');
 
   // 8. Logout

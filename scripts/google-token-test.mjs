@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.ZDROP_TEST_URL || 'http://localhost:3000';
 
 for (const body of [
   { rawUser: { uid: 'attacker', email: 'victim@example.com' } },

@@ -12,7 +12,7 @@ const steps = [
   },
   {
     title: "Meet the printer",
-    text: "The shop enters your code or scans your QR to open the job.",
+    text: "The shop enters your six-digit code or scans your ZDrop job QR to open the job.",
     icon: Printer,
   },
   {

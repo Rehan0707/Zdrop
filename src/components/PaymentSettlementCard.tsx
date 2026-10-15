@@ -141,13 +141,17 @@ export function PaymentSettlementCard({
               <span>Copies Requested:</span>
               <strong>{estimate.copies}</strong>
             </div>
-            <div className="zd-payment-item-row">
-              <span>Rate per Page ({session.preferences.colorMode}):</span>
-              <strong>
-                {estimate.currencySymbol}
-                {estimate.ratePerPage.toFixed(2)}
-              </strong>
-            </div>
+            {session.preferences.colorMode === "AUTO" ? (
+              <div className="zd-payment-item-row">
+                <span>Estimated page mix (all copies):</span>
+                <strong>{estimate.colorPages} color / {estimate.bwPages} B&amp;W</strong>
+              </div>
+            ) : (
+              <div className="zd-payment-item-row">
+                <span>Rate per Page ({session.preferences.colorMode}):</span>
+                <strong>{estimate.currencySymbol}{estimate.ratePerPage.toFixed(2)}</strong>
+              </div>
+            )}
             {estimate.discount > 0 && (
               <div className="zd-payment-item-row zd-discount-text">
                 <span>Duplex Paper Discount:</span>
@@ -249,7 +253,7 @@ export function PaymentSettlementCard({
                 <div>
                   <h4>Pay Exactly {estimate.currencySymbol}{estimate.totalAmount.toFixed(2)}</h4>
                   <p>
-                    Hand the exact amount to the operator when they dictate or scan your 6-digit code.
+                    Hand the exact amount to the operator when they share the six-digit code or ZDrop job QR.
                   </p>
                 </div>
               </div>

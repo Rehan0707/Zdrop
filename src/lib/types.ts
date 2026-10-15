@@ -11,7 +11,7 @@ export type AllowedMimeType = z.infer<typeof AllowedMimeTypesEnum>;
 
 export const PrintPreferencesSchema = z.object({
   copies: z.number().int().min(1).max(99).default(1),
-  colorMode: z.enum(["BW", "COLOR"]).default("BW"),
+  colorMode: z.enum(["AUTO", "BW", "COLOR"]).default("AUTO"),
   sides: z.enum(["SINGLE", "DOUBLE"]).default("DOUBLE"),
   pageRange: z.string().max(50).refine(v => v === "ALL" || (/^\s*\d+(?:\s*-\s*\d+)?(?:\s*,\s*\d+(?:\s*-\s*\d+)?)*\s*$/.test(v) && v.split(",").every(part => { const [a, b] = part.trim().split(/\s*-\s*/).map(Number); return a > 0 && (b === undefined || b >= a); })), "Enter valid pages, such as 1-5, 8.").default("ALL"),
   customerNotes: z.string().max(120).optional(),
@@ -25,6 +25,8 @@ export const FileMetadataSchema = z.object({
   size: z.number().int().max(25 * 1024 * 1024), // 25 MB max
   type: z.string(),
   pageCount: z.number().int().optional(),
+  /** 1-based page numbers identified as color by on-device page analysis. */
+  colorPages: z.array(z.number().int().positive().max(2000)).max(2000).optional(),
   previewUrl: z.string().optional(),
 });
 
@@ -53,12 +55,14 @@ export interface ShopPricing {
   colorRate: number;           // Rate per page for Color (e.g. 10 for ₹10)
   duplexDiscount: number;      // Discount per sheet if printed double-sided (default 0)
   currencySymbol: string;      // e.g. "₹", "$", "€", "£"
-  upiId?: string;              // Shop UPI VPA for digital payments (e.g. "xerox@upi")
+  upiId?: string;              // Shop UPI VPA for digital payments (e.g. "printshop@upi")
 }
 
 export interface CostEstimate {
   totalPages: number;
   copies: number;
+  colorPages: number;
+  bwPages: number;
   ratePerPage: number;
   subtotal: number;
   discount: number;
@@ -74,7 +78,7 @@ export interface ShopProfile {
   shopName: string;
   ownerName: string;
   phone: string;
-  campusAddress: string;
+  campusAddress: string; // Legacy API key for the shop address or service area.
   shopCode: string;
   createdAt: number;
   isActive: boolean;
@@ -108,4 +112,3 @@ export interface SessionData {
   paymentMethod?: PaymentMethod;
   paymentTimestamp?: number;
 }
-

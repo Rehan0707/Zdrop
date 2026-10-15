@@ -29,7 +29,7 @@ export function KioskEntryView({
         <h1>Enter Customer Access Code</h1>
 
         <p>
-          Type the 6-digit OTP dictated by the customer or scan their QR code to stream verified documents directly into the print buffer.
+          Enter the customer’s six-digit code or scan the ZDrop job QR to open the temporary print job in the browser preview.
         </p>
       </div>
 
@@ -54,9 +54,9 @@ export function KioskEntryView({
             <Shield size={18} />
           </div>
           <div className="zd-guideline-text">
-            <h3>Zero Hard Drive Clutter</h3>
+            <h3>Temporary document access</h3>
             <p>
-              Documents stream into native print buffers. No files saved to your PC’s Downloads folder.
+              ZDrop removes its stored copy when the job ends or the code expires. The shop browser or printer may retain other copies.
             </p>
           </div>
         </div>
@@ -66,9 +66,9 @@ export function KioskEntryView({
             <Lock size={18} />
           </div>
           <div className="zd-guideline-text">
-            <h3>Anti-Screenshot Shield</h3>
+            <h3>Limited browser controls</h3>
             <p>
-              Direct print only. File downloads, right-click saving, and screen capture are restricted.
+              The page can block its own context menu and flag some shortcuts, but cannot prevent system screenshots, downloads, or printer copies.
             </p>
           </div>
         </div>
@@ -78,9 +78,9 @@ export function KioskEntryView({
             <Clock size={18} />
           </div>
           <div className="zd-guideline-text">
-            <h3>Pre-Locked Preferences</h3>
+            <h3>Print instructions included</h3>
             <p>
-              Copies, color mode, and page ranges are selected by the customer on their phone.
+              Copies, color mode, and page ranges travel with the job for the operator to review.
             </p>
           </div>
         </div>

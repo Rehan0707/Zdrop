@@ -16,7 +16,7 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [preferences, setPreferences] = useState<PrintPreferences>({
     copies: 1,
-    colorMode: "BW",
+    colorMode: "AUTO",
     sides: "DOUBLE",
     pageRange: "ALL",
   });
@@ -42,7 +42,7 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
           Drop it. Print it. Done.
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
-          Upload your documents, hand the 6-digit code to the Xerox operator, and your files auto-delete instantly.
+          Upload your documents and share the 6-digit code. ZDrop removes its stored copy when the job ends or the session expires.
         </p>
       </div>
 

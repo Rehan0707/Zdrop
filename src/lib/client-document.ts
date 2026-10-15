@@ -12,7 +12,7 @@ export async function getClientDocumentPageCount(file: File): Promise<number> {
     return 1;
   }
 
-  // 2. PDF Documents: Read full page tree via pdf-lib or binary header scanner
+  // 2. PDF Documents: Read full page tree via pdf-lib or binary header parser
   if (type.includes("pdf") || name.endsWith(".pdf")) {
     try {
       const { PDFDocument } = await import("pdf-lib");
@@ -23,10 +23,10 @@ export async function getClientDocumentPageCount(file: File): Promise<number> {
         return pages;
       }
     } catch (err) {
-      console.warn("Client pdf-lib reader fallback to regex scanner:", err);
+      console.warn("Client pdf-lib reader fallback to regex parser:", err);
     }
 
-    // Fast Regex Scanner fallback for PDFs
+    // Fast Regex parser fallback for PDFs
     try {
       const slice = file.slice(0, Math.min(file.size, 1024 * 1024));
       const text = await slice.text();

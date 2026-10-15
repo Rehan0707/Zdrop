@@ -66,4 +66,41 @@ const delRes = await fetch(`${base}/api/sessions/delete`, {
 assert.equal(delRes.status, 200);
 console.log('✔ Test 3 passed: Session cleaned up.');
 
+// 4. Auto color estimate applies the selected page range across a mixed-color document.
+const autoCreateRes = await fetch(`${base}/api/sessions/create`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    files: [{
+      fileName: 'mixed.pdf',
+      fileSize: 1024,
+      mimeType: 'application/pdf',
+      pageCount: 4,
+      colorPages: [1, 4],
+    }],
+    preferences: {
+      copies: 2,
+      colorMode: 'AUTO',
+      sides: 'SINGLE',
+      pageRange: '2-4',
+    },
+  }),
+});
+assert.equal(autoCreateRes.status, 201);
+const autoCreated = await autoCreateRes.json();
+assert.equal(autoCreated.session.costEstimate.colorPages, 2);
+assert.equal(autoCreated.session.costEstimate.bwPages, 4);
+assert.equal(autoCreated.session.costEstimate.totalAmount, 28);
+assert.match(autoCreated.session.costEstimate.formula, /1 color \+ 2 B&W pages/);
+const autoDeleteRes = await fetch(`${base}/api/sessions/delete`, {
+  method: 'POST',
+  headers: {
+    Authorization: `Bearer ${autoCreated.token}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ sessionId: autoCreated.session.id }),
+});
+assert.equal(autoDeleteRes.status, 200);
+console.log('✔ Test 4 passed: Auto mode estimates mixed color/B&W pages for a selected range.');
+
 console.log('🎉 ALL PRICING & MICRO-PAYMENT ENDPOINT TESTS PASSED SUCCESSFULLY!');

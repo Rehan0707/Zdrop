@@ -42,7 +42,7 @@ export async function createSession(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      files: files.map(f => ({ fileName: f.name, fileSize: f.size, mimeType: f.type, pageCount: f.pageCount })),
+      files: files.map(f => ({ fileName: f.name, fileSize: f.size, mimeType: f.type, pageCount: f.pageCount, colorPages: f.colorPages })),
       preferences,
       shopId: shop?.id,
       shopName: shop?.name,

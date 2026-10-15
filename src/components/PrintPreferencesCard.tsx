@@ -50,11 +50,12 @@ export function PrintPreferencesCard({
           <SegmentedControl
             ariaLabel="Color mode"
             options={[
+              { id: "AUTO", label: "Auto", subLabel: "Ink smart" },
               { id: "BW", label: "B & W" },
               { id: "COLOR", label: "Color" },
             ]}
             value={preferences.colorMode}
-            onChange={(value) => update("colorMode", value as "BW" | "COLOR")}
+            onChange={(value) => update("colorMode", value as "AUTO" | "BW" | "COLOR")}
           />
         </div>
         <div className="zd-field">
@@ -70,6 +71,11 @@ export function PrintPreferencesCard({
           />
         </div>
       </div>
+      {preferences.colorMode === "AUTO" && files && files.length > 0 && (
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          ZDrop checks PDF and image pages on this device for color. Files without a page-color estimate are priced as color. The shop will confirm the suggested ranges before printing.
+        </p>
+      )}
       <div className="zd-field zd-field-wide">
         <span>Pages</span>
         <SegmentedControl
