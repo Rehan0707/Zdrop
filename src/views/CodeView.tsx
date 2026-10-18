@@ -14,6 +14,7 @@ interface CodeViewProps {
   onRevokeSession: () => void;
   onBackToUpload: () => void;
   isRevoking?: boolean;
+  onSessionUpdated?: (session: SessionData) => void;
 }
 
 export function CodeView({
@@ -21,6 +22,7 @@ export function CodeView({
   onRevokeSession,
   onBackToUpload,
   isRevoking = false,
+  onSessionUpdated,
 }: CodeViewProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -51,7 +53,7 @@ export function CodeView({
       />
 
       {/* Auto-Calculated Cost & Micro-Payment Settlement */}
-      <PaymentSettlementCard session={session} />
+      <PaymentSettlementCard session={session} onPaymentUpdated={onSessionUpdated} />
 
       {/* Live Status Progression */}
       <LiveStatusTracker status={session.status} deletionSource={session.deletionSource} />

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ShopProfile, ShopPricing } from "@/lib/types";
 import { DEFAULT_PRICING } from "@/lib/pricing";
 import {
@@ -44,6 +44,13 @@ export function ShopPricingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const rates = shop.pricing || DEFAULT_PRICING;
+    setBwRate(rates.bwRate); setColorRate(rates.colorRate); setDuplexDiscount(rates.duplexDiscount);
+    setCurrencySymbol(rates.currencySymbol); setUpiId(rates.upiId || ""); setError(null); setSuccess(false);
+  }, [isOpen, shop.id]);
 
   if (!isOpen) return null;
 

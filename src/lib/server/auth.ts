@@ -1,9 +1,9 @@
 import 'server-only';
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import path from 'node:path';
 import { UserProfile } from '../types';
 import { getShopByOwnerId } from './shops-store';
+import { isCloud } from './store';
+import { readRecords, mutateRecords } from './local-records';
 
 const AUTH_COOKIE_NAME = 'zdrop_auth';
 const AUTH_SECRET = process.env.ZDROP_AUTH_SECRET || process.env.SUPABASE_SECRET_KEY || process.env.RATE_LIMIT_SECRET || (process.env.NODE_ENV !== 'production' ? 'zdrop-auth-secure-secret-key-32chars' : '');
@@ -14,11 +14,8 @@ function authSecret(): string {
   }
   return AUTH_SECRET;
 }
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrxqpmsimbimoxgmdpel.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const localDir = path.resolve(process.env.ZDROP_DATA_DIR || (process.env.VERCEL ? path.join('/tmp', '.zdrop-data') : '.zdrop-data'));
-const localAccountsFile = path.join(localDir, 'shop_accounts.json');
 
 // --- Token & Cookie Management (HMAC signed payload) ---
 
@@ -105,144 +102,61 @@ interface LocalAccount {
   createdAt: number;
 }
 
-async function readLocalAccounts(): Promise<Record<string, LocalAccount>> {
-  try {
-    const raw = await readFile(localAccountsFile, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return {};
+async function authRequest(endpoint: string, body: unknown, admin = false) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Shop authentication is not configured.');
+  const res = await fetch(new URL(`/auth/v1/${endpoint}`, SUPABASE_URL), {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, ...(admin && !SUPABASE_KEY.startsWith('sb_secret_') ? { Authorization: `Bearer ${SUPABASE_KEY}` } : {}), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body), cache: 'no-store', signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    // Never persist hosted accounts to ephemeral disk or log upstream auth payloads.
+    if (admin && res.status === 422) throw new Error('This account could not be created. If already registered, log in instead.');
+    if (!admin && res.status === 400) throw new Error('Invalid email or password. Please try again.');
+    throw new Error('Shop authentication is unavailable. Please retry.');
   }
+  return res.json();
 }
 
-async function writeLocalAccounts(accounts: Record<string, LocalAccount>): Promise<void> {
-  await mkdir(localDir, { recursive: true });
-  await writeFile(localAccountsFile, JSON.stringify(accounts, null, 2), 'utf8');
+export async function registerShopOwnerUser(data: { email: string; password: string; name: string }): Promise<UserProfile> {
+  const email = data.email.trim().toLowerCase();
+  if (isCloud) {
+    const user = await authRequest('admin/users', { email, password: data.password, email_confirm: true, user_metadata: { full_name: data.name } }, true);
+    return { id: user.id, email, name: data.name, role: 'shop_owner', createdAt: Date.now() };
+  }
+  return mutateRecords<LocalAccount, UserProfile>('shop_accounts', accounts => {
+    if (accounts[email]) throw new Error('An account with this email address already exists. Please log in instead.');
+    const account: LocalAccount = { id: `usr_${randomBytes(16).toString('hex')}`, email, name: data.name, passwordHash: hashPassword(data.password), role: 'shop_owner', createdAt: Date.now() };
+    accounts[email] = account;
+    return { id: account.id, email, name: account.name, role: account.role, createdAt: account.createdAt };
+  });
 }
 
-// --- Shop Owner Auth Actions ---
-
-export async function registerShopOwnerUser(data: {
-  email: string;
-  password: string;
-  name: string;
-}): Promise<UserProfile> {
-  const cleanEmail = data.email.trim().toLowerCase();
-
-  // Try Supabase Auth Admin first if configured
-  if (SUPABASE_KEY && SUPABASE_URL) {
-    try {
-      const res = await fetch(new URL('/auth/v1/admin/users', SUPABASE_URL), {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          password: data.password,
-          email_confirm: true,
-          user_metadata: {
-            full_name: data.name,
-            role: 'shop_owner',
-          },
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        return {
-          id: json.id,
-          email: cleanEmail,
-          name: data.name,
-          role: 'shop_owner',
-          createdAt: Date.now(),
-        };
-      }
-      const errJson = await res.json().catch(() => ({}));
-      if (errJson.msg?.includes('already been registered') || errJson.message?.includes('already registered')) {
-        throw new Error('An account with this email address already exists. Please log in instead.');
-      }
-    } catch (e) {
-      if ((e as Error).message.includes('already exists')) throw e;
-      console.warn('Supabase auth register error, fallback to local accounts:', e);
-    }
+// Compensate only an account just created by an unsuccessful registration.
+export async function rollbackShopRegistration(user: UserProfile) {
+  if (isCloud) {
+    if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error('Shop authentication is not configured.');
+    const res = await fetch(new URL(`/auth/v1/admin/users/${encodeURIComponent(user.id)}`, SUPABASE_URL), {
+      method: 'DELETE', headers: { apikey: SUPABASE_KEY, ...(!SUPABASE_KEY.startsWith('sb_secret_') ? { Authorization: `Bearer ${SUPABASE_KEY}` } : {}) }, signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error('Registration rollback failed.');
+  } else {
+    await mutateRecords<LocalAccount, void>('shop_accounts', accounts => { if (accounts[user.email]?.id === user.id) delete accounts[user.email]; });
   }
-
-  // Local fallback
-  const accounts = await readLocalAccounts();
-  if (accounts[cleanEmail]) {
-    throw new Error('An account with this email address already exists. Please log in instead.');
-  }
-
-  const accountId = `usr_${randomBytes(16).toString('hex')}`;
-  const now = Date.now();
-  accounts[cleanEmail] = {
-    id: accountId,
-    email: cleanEmail,
-    name: data.name,
-    passwordHash: hashPassword(data.password),
-    role: 'shop_owner',
-    createdAt: now,
-  };
-  await writeLocalAccounts(accounts);
-
-  return {
-    id: accountId,
-    email: cleanEmail,
-    name: data.name,
-    role: 'shop_owner',
-    createdAt: now,
-  };
 }
 
 export async function loginShopOwnerUser(email: string, password: string): Promise<UserProfile> {
   const cleanEmail = email.trim().toLowerCase();
-
-  // Try Supabase Auth login if configured
-  if (SUPABASE_KEY && SUPABASE_URL) {
-    try {
-      const res = await fetch(new URL('/auth/v1/token?grant_type=password', SUPABASE_URL), {
-        method: 'POST',
-        headers: {
-          apikey: SUPABASE_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: cleanEmail, password }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        const user = json.user;
-        const shop = await getShopByOwnerId(user.id);
-        return {
-          id: user.id,
-          email: cleanEmail,
-          name: user.user_metadata?.full_name || cleanEmail.split('@')[0],
-          role: 'shop_owner',
-          shopId: shop?.id,
-          createdAt: Date.now(),
-        };
-      }
-    } catch {
-      // Fallback to local
-    }
+  if (isCloud) {
+    const { user } = await authRequest('token?grant_type=password', { email: cleanEmail, password });
+    const shop = await getShopByOwnerId(user.id);
+    // A normal Supabase user cannot gain shop privileges via this endpoint.
+    if (!shop) throw new Error('No print shop is registered to this account.');
+    return { id: user.id, email: user.email, name: shop.ownerName, role: 'shop_owner', shopId: shop.id, createdAt: shop.createdAt };
   }
-
-  // Local accounts check
-  const accounts = await readLocalAccounts();
-  const account = accounts[cleanEmail];
-  if (!account || !verifyPassword(password, account.passwordHash)) {
-    throw new Error('Invalid email or password. Please try again.');
-  }
-
+  const account = (await readRecords<LocalAccount>('shop_accounts'))[cleanEmail];
+  if (!account || !verifyPassword(password, account.passwordHash)) throw new Error('Invalid email or password. Please try again.');
   const shop = await getShopByOwnerId(account.id);
-  return {
-    id: account.id,
-    email: account.email,
-    name: account.name,
-    role: 'shop_owner',
-    shopId: shop?.id,
-    createdAt: account.createdAt,
-  };
+  if (!shop) throw new Error('No print shop is registered to this account.');
+  return { id: account.id, email: account.email, name: account.name, role: 'shop_owner', shopId: shop.id, createdAt: account.createdAt };
 }

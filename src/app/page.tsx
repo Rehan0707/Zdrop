@@ -28,6 +28,7 @@ export default function CustomerPage() {
   const [session, setSession] = useState<SessionData | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(true);
   const [isRevoking, setIsRevoking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,8 @@ export default function CustomerPage() {
           setStep(["DELETED", "EXPIRED"].includes(s.status) ? "SUCCESS" : "CODE");
         }
       })
-      .catch(() => {});
+      .catch(error => setError((error as Error).message))
+      .finally(() => setIsRestoring(false));
   }, []);
 
   // Subscribe to real-time session changes (e.g. operator accesses or deletes file)
@@ -135,6 +137,7 @@ export default function CustomerPage() {
               <HeroSection
                 onGenerateCode={handleGenerateCode}
                 isGenerating={isGenerating}
+                isRestoring={isRestoring}
                 uploadProgress={uploadProgress}
               />
 
@@ -166,6 +169,7 @@ export default function CustomerPage() {
             >
               <CodeView
                 session={session}
+                onSessionUpdated={setSession}
                 onRevokeSession={handleRevokeSession}
                 onBackToUpload={() => setStep("UPLOAD")}
                 isRevoking={isRevoking}

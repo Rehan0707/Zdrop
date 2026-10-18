@@ -58,6 +58,14 @@ export interface ShopPricing {
   upiId?: string;              // Shop UPI VPA for digital payments (e.g. "printshop@upi")
 }
 
+export const ShopPricingSchema = z.object({
+  bwRate: z.number().finite().min(0.1).max(1000),
+  colorRate: z.number().finite().min(0.1).max(1000),
+  duplexDiscount: z.number().finite().min(0).max(100),
+  currencySymbol: z.string().trim().min(1).max(4),
+  upiId: z.string().trim().max(100).refine(value => !value || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/.test(value), 'Enter a valid UPI address.').optional(),
+}).strict();
+
 export interface CostEstimate {
   totalPages: number;
   copies: number;
@@ -85,7 +93,9 @@ export interface ShopProfile {
   pricing?: ShopPricing;
 }
 
-export type PaymentStatus = "UNPAID" | "PAID_ONLINE" | "PAID_COUNTER";
+export type PublicShop = Pick<ShopProfile, "id" | "shopName" | "campusAddress" | "shopCode" | "pricing">;
+
+export type PaymentStatus = "UNPAID" | "PENDING_CONFIRMATION" | "PAID_ONLINE" | "PAID_COUNTER";
 export type PaymentMethod = "UPI" | "CASH" | "COUNTER";
 
 export interface SessionData {
@@ -112,6 +122,8 @@ export interface SessionData {
   userAvatar?: string;
   shopId?: string;
   shopName?: string;
+  /** Rates and payment destination captured by the server when the job is created. */
+  shopPricing?: ShopPricing;
   operatorId?: string;
   costEstimate?: CostEstimate;
   paymentStatus?: PaymentStatus;

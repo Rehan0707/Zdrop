@@ -199,6 +199,9 @@ export async function purge(s: StoredSession, source: StoredSession['deletionSou
   s.preferences = { copies: 1, colorMode: 'BW', sides: 'DOUBLE', pageRange: 'ALL' };
   s.files = [];
   s.totalSizeBytes = 0;
+  delete s.userId; delete s.userEmail; delete s.userName; delete s.userAvatar;
+  delete s.operatorId; delete s.shopId; delete s.shopName; delete s.shopPricing;
+  delete s.stationDeliveredPages; delete s.stationSubmitAuthorized;
   s.uploadSlots = {};
   s.purging = false;
   await saveSession(s);
@@ -356,7 +359,21 @@ export async function maintenance() {
       failed++;
     });
   }
-  return { purged, retired, failed };
+  // Signed upload capabilities expire independently of sessions. Reap late
+  // uploads to retired/deleted slots through Storage's API, never SQL DELETE.
+  let orphaned = 0;
+  if (isSupabaseStorage) {
+    try {
+      for (let batch = 0; batch < 5; batch++) {
+        const paths = await metadataRpc<string[]>('zdrop_orphaned_uploads', { p_limit: 200 });
+        if (!paths.length) break;
+        await deleteSupabaseFiles(paths);
+        orphaned += paths.length;
+        if (paths.length < 200) break;
+      }
+    } catch { failed++; }
+  }
+  return { purged, retired, orphaned, failed };
 }
 
 export async function signedFileUrl(s: StoredSession, fileId: string) {

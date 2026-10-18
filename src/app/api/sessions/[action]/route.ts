@@ -7,6 +7,9 @@ import { inspectDocument, DocumentError } from '@/lib/server/documents';
 import { rateLimit } from '@/lib/server/rate-limit';
 import { getAuthUserFromCookie } from '@/lib/server/auth';
 import { printMode } from '@/lib/server/print-mode';
+import { readJsonBody, RequestError } from '@/lib/server/request';
+import { getShopById } from '@/lib/server/shops-store';
+import { DEFAULT_PRICING, calculatePrintCost } from '@/lib/pricing';
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 const metadata = z.object({
@@ -19,15 +22,20 @@ const metadata = z.object({
 const createSchema = z.object({
   files: z.array(metadata).min(1).max(3),
   preferences: PrintPreferencesSchema,
-  shopId: z.string().optional(),
-  shopName: z.string().optional(),
+  shopId: z.string().regex(/^shop_[a-f0-9-]{36}$/).optional(),
+});
+const paymentSchema = z.object({
+  paymentStatus: z.enum(['UNPAID', 'PENDING_CONFIRMATION', 'PAID_ONLINE', 'PAID_COUNTER']),
+  paymentMethod: z.enum(['UPI', 'CASH', 'COUNTER']),
 });
 const reply = (data: unknown, status = 200) => NextResponse.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
-async function handle(req: NextRequest, action: string) {
+async function handle(req: NextRequest, action: string, json?: any) {
   try {
     const authUser = getAuthUserFromCookie(req.headers.get('cookie'));
     if (action === 'create' && req.method === 'POST') {
-      const input = createSchema.parse(await req.json());
+      const input = createSchema.parse(json);
+      const shop = input.shopId ? await getShopById(input.shopId) : null;
+      if (input.shopId && !shop) return reply({ error: 'This shop is unavailable. Choose another counter.' }, 400);
       const s: StoredSession = {
         id: newId(),
         accessCode: '',
@@ -49,19 +57,12 @@ async function handle(req: NextRequest, action: string) {
         userEmail: authUser?.email,
         userName: authUser?.name,
         userAvatar: authUser?.avatarUrl,
-        shopId: input.shopId,
-        shopName: input.shopName,
+        shopId: shop?.id,
+        shopName: shop?.shopName,
+        shopPricing: { ...DEFAULT_PRICING, ...shop?.pricing },
+        paymentStatus: 'UNPAID',
       };
-
-      try {
-        const { calculatePrintCost } = await import('@/lib/pricing');
-        const { getShopById } = await import('@/lib/server/shops-store');
-        const shop = input.shopId ? await getShopById(input.shopId) : null;
-        s.costEstimate = calculatePrintCost(s.files, s.preferences, shop?.pricing);
-        s.paymentStatus = 'UNPAID';
-      } catch (err) {
-        console.warn('Cost estimation init error:', err);
-      }
+      s.costEstimate = calculatePrintCost(s.files, s.preferences, s.shopPricing);
 
       s.uploadSlots = Object.fromEntries(s.files.map(f => [f.fileId, { size: f.size, type: f.type }]));
       s.purging = false; s.uploadSealed = false;
@@ -85,7 +86,7 @@ async function handle(req: NextRequest, action: string) {
       await saveSession(s);
       return reply({ session: publicSession(s, s.operatorToken), token: s.operatorToken });
     }
-    const input = req.method === 'GET' ? Object.fromEntries(req.nextUrl.searchParams) : action === 'upload' ? Object.fromEntries(req.nextUrl.searchParams) : await req.json();
+    const input = req.method === 'GET' ? Object.fromEntries(req.nextUrl.searchParams) : action === 'upload' ? Object.fromEntries(req.nextUrl.searchParams) : json;
     const s = await readSession(String(input.sessionId));
     const token = req.headers.get('authorization')?.replace(/^Bearer /, '');
     if (!s || !token || (token !== s.ownerToken && token !== s.operatorToken)) return reply({ error: 'Session access denied.' }, 403);
@@ -136,17 +137,29 @@ async function handle(req: NextRequest, action: string) {
       s.uploadSealed = true; await saveSession(s); // Seal direct uploads before inspecting immutable contents.
       try {
         for (const f of s.files) { if (isCloud) await enforceFileNoStore(s.id, f.fileId); const bytes = await getFile(s.id, f.fileId); if (bytes.length !== f.size) throw new DocumentError('Upload incomplete or file size mismatch.'); const pages = await inspectDocument(bytes, f.type); if (pages) { f.pageCount = pages; if (f.colorPages) f.colorPages = f.colorPages.filter(page => page <= pages); } }
+        if (s.files.every(file => !file.type.includes('wordprocessing'))) {
+          try { printPages(s.files, s.preferences); }
+          catch (error) { throw new DocumentError((error as Error).message); }
+        }
         // Update accurate cost estimate now that page counts are verified
-        const { calculatePrintCost } = await import('@/lib/pricing');
-        const { getShopById } = await import('@/lib/server/shops-store');
-        const shop = s.shopId ? await getShopById(s.shopId) : null;
-        s.costEstimate = calculatePrintCost(s.files, s.preferences, shop?.pricing);
+        s.costEstimate = calculatePrintCost(s.files, s.preferences, s.shopPricing);
       } catch (error) { await purge(s, 'STUDENT_REVOKE'); throw error; }
       await activateSession(s); return reply({ session: publicSession(s) });
     }
     if (action === 'payment' && req.method === 'POST') {
-      s.paymentStatus = input.paymentStatus || 'PAID_COUNTER';
-      s.paymentMethod = input.paymentMethod || 'COUNTER';
+      if (s.status !== 'ACCESSED' && s.status !== 'ACTIVE' || s.printStartedAt) return reply({ error: 'Payment cannot be changed for this job.' }, 409);
+      const payment = paymentSchema.parse(input);
+      if (token === s.ownerToken) {
+        if (payment.paymentStatus !== 'PENDING_CONFIRMATION' || payment.paymentMethod !== 'UPI') return reply({ error: 'Only the operator can confirm money received.' }, 403);
+        if (!s.shopPricing?.upiId || s.shopPricing.currencySymbol !== '₹') return reply({ error: 'This shop has not configured INR UPI payments.' }, 409);
+        if (s.paymentStatus === 'PAID_ONLINE' || s.paymentStatus === 'PAID_COUNTER') return reply({ error: 'Payment is already recorded by the operator.' }, 409);
+      } else if (payment.paymentStatus === 'PENDING_CONFIRMATION' ||
+        payment.paymentStatus === 'PAID_ONLINE' && payment.paymentMethod !== 'UPI' ||
+        payment.paymentStatus === 'PAID_COUNTER' && payment.paymentMethod === 'UPI') {
+        return reply({ error: 'Choose a matching payment status and method.' }, 400);
+      }
+      s.paymentStatus = payment.paymentStatus;
+      s.paymentMethod = payment.paymentMethod;
       s.paymentTimestamp = Date.now();
       await saveSession(s);
       return reply({ session: publicSession(s, token === s.operatorToken ? token : undefined) });
@@ -158,6 +171,7 @@ async function handle(req: NextRequest, action: string) {
     return reply({ error: 'Unknown operation.' }, 404);
   } catch (e) {
     console.error('[sessions error]:', e);
+    if (e instanceof RequestError) return reply({ error: e.message }, e.status);
     if (e instanceof DocumentError) return reply({ error: e.message }, 400);
     if (e instanceof z.ZodError) return reply({ error: e.issues[0].message }, 400);
     return reply({ error: (e as Error)?.message || 'The operation could not be completed. Please retry.' }, 500);
@@ -166,21 +180,22 @@ async function handle(req: NextRequest, action: string) {
 async function dispatch(req: NextRequest, action: string) {
   try {
     if ((action === 'create' || action === 'resolve') && !await rateLimit(req, action)) return reply({ error: 'Too many attempts. Please wait one minute.' }, 429);
-    if (req.method === 'POST' && action !== 'upload' && Number(req.headers.get('content-length')) > 16384) return reply({ error: 'Request too large.' }, 413);
+    const json = req.method === 'POST' && action !== 'upload' ? await readJsonBody(req) : undefined;
     let id = req.nextUrl.searchParams.get('sessionId');
     if (action === 'resolve') {
       const code = req.nextUrl.searchParams.get('code') || '';
       if (/^\d{6}$/.test(code)) id = (await byCode(code))?.id || null;
     } else if (!id && action !== 'create' && req.method === 'POST') {
-      id = (await req.clone().json()).sessionId;
+      id = typeof json?.sessionId === 'string' ? json.sessionId : null;
     }
     if (id && action !== 'resolve') {
       const token = req.headers.get('authorization')?.replace(/^Bearer /, '');
       const session = await readSession(id);
       if (!session || !token || (token !== session.ownerToken && token !== session.operatorToken)) return reply({ error: 'Session access denied.' }, 403);
     }
-    return id ? await withSessionLock(id, () => handle(req, action)) : await handle(req, action);
+    return id ? await withSessionLock(id, () => handle(req, action, json)) : await handle(req, action, json);
   } catch (err) {
+    if (err instanceof RequestError) return reply({ error: err.message }, err.status);
     console.error(`[dispatch error ${action}]:`, err);
     return reply({ error: 'Session is busy. Please retry.' }, 409);
   }

@@ -15,8 +15,9 @@ import {
   FileMetadata,
   PrintPreferences,
   PrintPreferencesSchema,
-  ShopProfile,
+  PublicShop,
 } from "@/lib/types";
+import { printPages } from "@/lib/print-policy";
 import { DropZone } from "@/components/DropZone";
 import { PrintPreferencesCard } from "@/components/PrintPreferencesCard";
 import { useAuth } from "@/lib/auth-context";
@@ -30,15 +31,18 @@ interface HeroSectionProps {
     shop?: { id: string; name: string },
   ) => void;
   isGenerating?: boolean;
+  isRestoring?: boolean;
   uploadProgress?: number;
 }
 
 export function HeroSection({
   onGenerateCode,
   isGenerating = false,
+  isRestoring = false,
   uploadProgress = 0,
 }: HeroSectionProps) {
   const { user, isLoading } = useAuth();
+  const [analyzing, setAnalyzing] = useState(false);
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [preferences, setPreferences] = useState<PrintPreferences>({
     copies: 1,
@@ -46,14 +50,15 @@ export function HeroSection({
     sides: "DOUBLE",
     pageRange: "ALL",
   });
-  const [shops, setShops] = useState<ShopProfile[]>([]);
+  const [shopError, setShopError] = useState("");
+  const [shops, setShops] = useState<PublicShop[]>([]);
   const [selectedShopId, setSelectedShopId] = useState("");
   const [showSignIn, setShowSignIn] = useState(false);
 
   useEffect(() => {
     let active = true;
     fetch("/api/shops")
-      .then((response) => response.json())
+      .then(async (response) => { if (!response.ok) throw new Error("Shop rates are unavailable. Retry before choosing a destination."); return response.json(); })
       .then((data) => {
         if (active && Array.isArray(data.shops)) {
           setShops(data.shops);
@@ -62,7 +67,7 @@ export function HeroSection({
             const shopQuery = params.get("shop");
             if (shopQuery) {
               const matched = data.shops.find(
-                (s: ShopProfile) =>
+                (s: PublicShop) =>
                   s.shopCode.toLowerCase() === shopQuery.toLowerCase() ||
                   s.id.toLowerCase() === shopQuery.toLowerCase()
               );
@@ -73,17 +78,21 @@ export function HeroSection({
           }
         }
       })
-      .catch(() => {});
+      .catch(error => { if (active) setShopError(error.message); });
     return () => {
       active = false;
     };
   }, []);
 
   const validation = PrintPreferencesSchema.safeParse(preferences);
-  const canSubmit = files.length > 0 && validation.success;
+  let printProblem = "";
+  if (files.length && !analyzing && validation.success) {
+    try { printPages(files, preferences); } catch (error) { printProblem = (error as Error).message; }
+  }
+  const canSubmit = files.length > 0 && !analyzing && validation.success && !printProblem;
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!canSubmit || isGenerating || isLoading) return;
+    if (!canSubmit || isGenerating || isRestoring || isLoading) return;
     if (!user) {
       setShowSignIn(true);
       return;
@@ -180,9 +189,10 @@ export function HeroSection({
           >
             <DropZone
               files={files}
-              onFilesChange={setFiles}
+              onFilesChange={setFiles} onBusyChange={setAnalyzing}
               disabled={isGenerating}
             />
+            {shopError && <p role="alert" className="zd-alert">{shopError} <button type="button" onClick={() => window.location.reload()}>Retry</button></p>}
             {files.length > 0 && (
               <>
                 {user && (
@@ -231,6 +241,7 @@ export function HeroSection({
                 />
               </>
             )}
+            {printProblem && <p role="alert" className="zd-alert">{printProblem}</p>}
             {!validation.success && (
               <p role="alert" className="zd-alert">
                 {validation.error.issues[0].message}
@@ -255,10 +266,10 @@ export function HeroSection({
             <button
               type="submit"
               className="zd-button zd-button--primary zd-workbench-submit"
-              disabled={!canSubmit || isGenerating || isLoading}
+              disabled={!canSubmit || isGenerating || isRestoring || isLoading}
             >
               <span>
-                {isGenerating
+                {isRestoring ? "Restoring your job…" : isGenerating
                   ? `Uploading… ${uploadProgress}%`
                   : "Get my print code"}
               </span>

@@ -1,3 +1,5 @@
+> **Current implementation (2026-10-18):** This document retains the original product/design specification. Use [README](../README.md), [backend schema](BACKEND_SCHEMA.md) and [setup status](SETUP_STATUS.md) for the implemented Supabase persistence, operator-confirmed payments and one-time document-only automatic-purge printing. Historical Firestore, iframe, download and manual “mark printed” examples below are superseded.
+
 # ZDrop - Product Requirements Document (PRD)
 
 > **Document Version:** 1.0.0 (MVP Specification)  

@@ -346,7 +346,8 @@ assert.deepEqual(deleteBody.prefixes, [
   "sessions/test/file-a",
   "sessions/test/file-b",
 ]);
-const policy = loadSource("src/lib/print-policy.ts", {});
+const ranges = loadSource("src/lib/page-ranges.ts", {});
+const policy = loadSource("src/lib/print-policy.ts", { "./page-ranges": ranges });
 const summary = [
   { fileId: "pdf", name: "pdf", type: "application/pdf", pageCount: 2 },
   { fileId: "image", name: "image", type: "image/png", pageCount: 1 },
@@ -363,6 +364,7 @@ assert.throws(
     }),
   /100/,
 );
+assert.deepEqual(JSON.parse(JSON.stringify(policy.printPages(summary, { pageRange: "3" }))), [{ fileId: "image", name: "image", page: 1 }]);
 assert.throws(
   () => policy.printPages(summary, { pageRange: "8" }),
   /does not include/,

@@ -1,106 +1,57 @@
 import assert from 'node:assert/strict';
+import { PDFDocument } from 'pdf-lib';
 
 const base = process.env.ZDROP_TEST_URL || 'http://localhost:3000';
+async function api(path, body, expected = 200, headers = {}) {
+  const res = await fetch(base + path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', ...headers }, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json();
+  assert.equal(res.status, expected, JSON.stringify(data));
+  return { ...data, cookie: res.headers.get('set-cookie')?.split(';')[0] };
+}
+const auth = token => ({ Authorization: `Bearer ${token}` });
+const email = `pricing-${crypto.randomUUID()}@example.test`;
+const owner = await api('/api/auth/shop/register', { shopName: 'Test Print Counter', ownerName: 'Test Owner', email, password: 'test-password-123', phone: '9999999999', campusAddress: 'Test address', shopCode: 'P'+Date.now().toString(36).toUpperCase() });
+const pricing = { bwRate: 0.5, colorRate: 3, duplexDiscount: 0, currencySymbol: '₹', upiId: 'synthetic-test@upi' };
+await api('/api/shops/pricing', { shopId: owner.shop.id, pricing }, 401);
+await api('/api/shops/pricing', { shopId: owner.shop.id, pricing: { ...pricing, bwRate: -2 } }, 400, { cookie: owner.cookie });
+await api('/api/shops/pricing', { shopId: owner.shop.id, pricing }, 200, { cookie: owner.cookie });
+const another = await api('/api/auth/shop/register', { shopName: 'Other Test Counter', ownerName: 'Other Owner', email: `other-${email}`, password: 'test-password-123', phone: '9999999999', campusAddress: 'Test address', shopCode: 'Q'+Date.now().toString(36).toUpperCase() });
+await api('/api/shops/pricing', { shopId: owner.shop.id, pricing }, 403, { cookie: another.cookie });
+const directory = await api('/api/shops');
+const published = directory.shops.find(s => s.id === owner.shop.id);
+assert.deepEqual(published.pricing, pricing);
+for (const key of ['ownerId','ownerName','ownerEmail','phone']) assert.equal(key in published, false);
+const login = await api('/api/auth/shop/login', { email, password: 'test-password-123' });
+assert.equal(login.shop.id, owner.shop.id);
+assert.deepEqual(login.shop.pricing, pricing);
+await api('/api/auth/shop/login', { email, password: 'wrong' }, 401);
 
-console.log('Testing Pricing & Micro-Payment Endpoints...');
-
-// 1. Create a 3-page session with 2 copies and B&W
-const createRes = await fetch(`${base}/api/sessions/create`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    files: [
-      { fileName: 'notes.pdf', fileSize: 1024, mimeType: 'application/pdf' },
-    ],
-    preferences: {
-      copies: 2,
-      colorMode: 'BW',
-      sides: 'SINGLE',
-      pageRange: 'ALL',
-    },
-  }),
-});
-
-assert.equal(createRes.status, 201);
-const { session, token } = await createRes.json();
-assert.ok(session.costEstimate, 'Session should have a cost estimate');
-assert.equal(session.costEstimate.copies, 2);
-assert.equal(session.costEstimate.ratePerPage, 2);
-assert.equal(session.costEstimate.currencySymbol, '₹');
-assert.equal(session.paymentStatus, 'UNPAID');
-console.log('✔ Test 1 passed: Session created with initial cost estimate (UNPAID).');
-
-// 2. Test Payment status update via API (Customer pays via UPI)
-const payRes = await fetch(`${base}/api/sessions/payment`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    sessionId: session.id,
-    paymentStatus: 'PAID_ONLINE',
-    paymentMethod: 'UPI',
-  }),
-});
-
-assert.equal(payRes.status, 200);
-const payData = await payRes.json();
-assert.equal(payData.session.paymentStatus, 'PAID_ONLINE');
-assert.equal(payData.session.paymentMethod, 'UPI');
-console.log('✔ Test 2 passed: Payment updated to PAID_ONLINE (UPI).');
-
-// 3. Test operator resolving session sees the verified payment status
-const resolveRes = await fetch(`${base}/api/sessions/resolve?code=${session.accessCode}`);
-assert.equal(resolveRes.status, 409); // Still in PENDING_UPLOAD, which confirms code resolution works
-
-// 4. Cleanup
-const delRes = await fetch(`${base}/api/sessions/delete`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ sessionId: session.id }),
-});
-assert.equal(delRes.status, 200);
-console.log('✔ Test 3 passed: Session cleaned up.');
-
-// 4. Auto color estimate applies the selected page range across a mixed-color document.
-const autoCreateRes = await fetch(`${base}/api/sessions/create`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    files: [{
-      fileName: 'mixed.pdf',
-      fileSize: 1024,
-      mimeType: 'application/pdf',
-      pageCount: 4,
-      colorPages: [1, 4],
-    }],
-    preferences: {
-      copies: 2,
-      colorMode: 'AUTO',
-      sides: 'SINGLE',
-      pageRange: '2-4',
-    },
-  }),
-});
-assert.equal(autoCreateRes.status, 201);
-const autoCreated = await autoCreateRes.json();
-assert.equal(autoCreated.session.costEstimate.colorPages, 2);
-assert.equal(autoCreated.session.costEstimate.bwPages, 4);
-assert.equal(autoCreated.session.costEstimate.totalAmount, 28);
-assert.match(autoCreated.session.costEstimate.formula, /1 color \+ 2 B&W pages/);
-const autoDeleteRes = await fetch(`${base}/api/sessions/delete`, {
-  method: 'POST',
-  headers: {
-    Authorization: `Bearer ${autoCreated.token}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ sessionId: autoCreated.session.id }),
-});
-assert.equal(autoDeleteRes.status, 200);
-console.log('✔ Test 4 passed: Auto mode estimates mixed color/B&W pages for a selected range.');
-
-console.log('🎉 ALL PRICING & MICRO-PAYMENT ENDPOINT TESTS PASSED SUCCESSFULLY!');
+const pdf = await PDFDocument.create();
+pdf.addPage(); pdf.addPage(); pdf.addPage();
+const bytes = Buffer.from(await pdf.save());
+const created = await api('/api/sessions/create', { files: [{fileName:'notes.pdf',fileSize:bytes.length,mimeType:'application/pdf',pageCount:3,colorPages:[1,3]}], preferences:{copies:2,colorMode:'AUTO',sides:'SINGLE',pageRange:'2-3'}, shopId:owner.shop.id, shopName:'Spoofed shop' }, 201);
+const id = created.session.id;
+assert.equal(created.session.shopName, 'Test Print Counter');
+assert.equal(created.session.costEstimate.totalAmount, 7);
+await api('/api/sessions/payment', {sessionId:id,paymentStatus:'PAID_ONLINE',paymentMethod:'UPI'},409,auth(created.token));
+const upload = await fetch(`${base}/api/sessions/upload?sessionId=${id}&fileId=${created.session.files[0].fileId}`, {method:'POST',headers:auth(created.token),body:bytes});
+assert.equal(upload.status,200);
+await api('/api/shops/pricing', { shopId: owner.shop.id, pricing: { ...pricing, colorRate: 20 } }, 200, { cookie: owner.cookie });
+const confirmed = await api('/api/sessions/confirm',{sessionId:id},200,auth(created.token));
+assert.equal(confirmed.session.costEstimate.totalAmount,7,'A job keeps its quoted rates after a shop changes prices.');
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PAID_ONLINE',paymentMethod:'UPI'},403,auth(created.token));
+const pending=await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PENDING_CONFIRMATION',paymentMethod:'UPI'},200,auth(created.token));
+assert.equal(pending.session.paymentStatus,'PENDING_CONFIRMATION');
+const operator=await api('/api/sessions/resolve?code='+created.session.accessCode);
+assert.equal(operator.session.paymentStatus,'PENDING_CONFIRMATION');
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'MADE_UP',paymentMethod:'CASH'},400,auth(operator.token));
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PAID_COUNTER',paymentMethod:'UPI'},400,auth(operator.token));
+const paid=await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PAID_ONLINE',paymentMethod:'UPI'},200,auth(operator.token));
+assert.equal(paid.session.paymentStatus,'PAID_ONLINE');
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PENDING_CONFIRMATION',paymentMethod:'UPI'},409,auth(created.token));
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'UNPAID',paymentMethod:'CASH'},200,auth(operator.token));
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PAID_COUNTER',paymentMethod:'CASH'},200,auth(operator.token));
+await api('/api/sessions/delete',{sessionId:id},200,auth(created.token));
+await api('/api/sessions/payment',{sessionId:id,paymentStatus:'PAID_COUNTER',paymentMethod:'CASH'},410,auth(operator.token));
+await api('/api/sessions/create',{files:[{fileName:'x.pdf',fileSize:1,mimeType:'application/pdf'}],preferences:{copies:1},shopId:'shop_'+crypto.randomUUID()},400);
+console.log('PASS: durable shop rates, owner isolation, directory privacy, real login, canonical shop identity, frozen quotes, pending UPI reports, operator-only settlement, invalid/deleted payment rejection.');

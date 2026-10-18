@@ -19,7 +19,7 @@ import { ShopQrModal } from "@/components/ShopQrModal";
 import { ShopPricingModal } from "@/components/ShopPricingModal";
 
 function KioskContent() {
-  const { shop } = useAuth();
+  const { shop, refresh } = useAuth();
   const searchParams = useSearchParams();
   const [session, setSession] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -198,6 +198,7 @@ function KioskContent() {
           isOpen={showPricingModal}
           onClose={() => setShowPricingModal(false)}
           onSaved={() => {
+            void refresh();
             setSuccessToast("Pricing rates and UPI setup saved successfully!");
             setTimeout(() => setSuccessToast(null), 3500);
           }}

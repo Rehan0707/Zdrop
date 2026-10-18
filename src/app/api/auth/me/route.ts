@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const user = getAuthUserFromCookie(cookieHeader);
 
   if (!user) {
-    return NextResponse.json({ user: null, shop: null });
+    return NextResponse.json({ user: null, shop: null }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
   let shop = null;
@@ -15,5 +15,5 @@ export async function GET(request: NextRequest) {
     shop = await getShopByOwnerId(user.id);
   }
 
-  return NextResponse.json({ user, shop });
+  return NextResponse.json({ user, shop }, { headers: { 'Cache-Control': 'no-store' } });
 }

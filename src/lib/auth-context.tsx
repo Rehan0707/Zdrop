@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getRedirectResult, signInWithPopup, signInWithRedirect, type UserCredential } from 'firebase/auth';
+import { getRedirectResult, signInWithPopup, signInWithRedirect, signOut, type UserCredential } from 'firebase/auth';
 import { getClientAuth, getGoogleProvider } from './firebase-client';
 import { UserProfile, ShopProfile } from './types';
 
@@ -168,7 +168,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('Sign-out failed. Please retry.');
+      await signOut(getClientAuth());
       setUser(null);
       setShop(null);
     } finally {

@@ -26,6 +26,9 @@ export async function uploadCloud(session: SessionData, files: FileMetadata[], u
           if (xhr.status >= 200 && xhr.status < 300) resolve();
           else reject(new Error(`Upload failed with status ${xhr.status}`));
         };
+        xhr.timeout = 5 * 60 * 1000;
+        xhr.ontimeout = () => reject(new Error('Upload timed out. Check your connection and retry.'));
+        xhr.onabort = () => reject(new Error('Upload cancelled.'));
         xhr.onerror = () => reject(new Error('Network connection error during file upload.'));
         xhr.send(file);
       });

@@ -1,166 +1,25 @@
-# ZDrop - Backend Database & Storage Schema
+# ZDrop backend schema
 
-> **Document Version:** 1.0.0 (Data Architecture & Model Specification)  
-> **Target Database:** Google Cloud Firestore (NoSQL Document Store)  
-> **Blob Store:** Firebase Cloud Storage (Google Cloud Storage)  
-> **Validation Engine:** Zod (TypeScript runtime schema validation)  
+Current source of truth: `src/lib/server/store.ts`, `shops-store.ts` and the ordered SQL migrations. Older Firestore examples in the product design documents describe the original architecture.
 
----
+All hosted session metadata uses Supabase PostgreSQL. The `zdrop_private` schema contains:
 
-## 1. Firestore Data Collections
+| Table | Purpose |
+| --- | --- |
+| `sessions` | JSON job data with generated expiry, status, purging and deletion columns |
+| `codes` | Atomic six-digit code reservations and reservation deadlines |
+| `locks` | Expiring distributed leases; mutations require the matching live lease |
+| `rate_limits` | Atomic keyed-hash counters with one-minute reset and eventual housekeeping |
+| `shops` | Durable owner/shop profiles, unique shop code, validated pricing and UPI settings |
 
-The ZDrop data layer is deliberately minimalist and privacy-compliant. No user credentials, IP logs, or personal telephone numbers are retained in the database.
+Browser roles have no access to the private schema or ZDrop RPCs. Service credentials stay in server environment variables. SQL functions use invoker security with an empty search path. Application routes authorize capabilities or shop ownership before calling them.
 
-### 1.1 Collection: `sessions`
-Path: `/sessions/{sessionId}`  
-Document Key: `sessionId` (String format: `ses_<uuidv4>`)
+`zdrop_reserve` chooses server timestamps and reserves a code transactionally. `zdrop_activate` validates a sealed pending upload and renews its 15-minute deadline. `zdrop_save_session` requires a lease and preserves immutable identity/expiry fields. `zdrop_begin_print` is the only operation that can shorten a live job’s deadline; it prevents replay and cannot alter unrelated fields. `zdrop_acquire_lock`, `zdrop_renew_lock` and `zdrop_release_lock` protect concurrent requests. `zdrop_rate_limit` increments atomically. `zdrop_candidates`, `zdrop_housekeeping` and `zdrop_retire` support cleanup and anonymous receipt retirement.
 
-#### Field Definitions
-| Field Name | Type | Constraints / Format | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | String | `ses_[a-f0-9-]{36}` | Unique session identifier. |
-| `accessCode` | String | Exactly 6 numeric digits (`^[0-9]{6}$`) | Temporary OTP code used across counter. |
-| `status` | String (Enum) | `PENDING_UPLOAD` \| `ACTIVE` \| `ACCESSED` \| `PRINTED` \| `DELETED` \| `EXPIRED` | Lifecycle state machine tracker. |
-| `createdAt` | Timestamp | Firestore ServerTimestamp | Exact timestamp of session initialization. |
-| `expiresAt` | Timestamp | `createdAt + 15 minutes` | Hard cutoff timestamp for automated purge. |
-| `accessedAt` | Timestamp \| Null | Nullable | Timestamp when operator first validated the OTP. |
-| `deletedAt` | Timestamp \| Null | Nullable | Timestamp when documents were purged from storage. |
-| `deletionSource` | String \| Null | `OPERATOR_PRINT` \| `STUDENT_REVOKE` \| `TTL_PURGE` \| Null | Origin of deletion trigger; `STUDENT_REVOKE` is the persisted legacy value for a customer-requested deletion. |
-| `preferences` | Map (Object) | Embedded Map | User-defined printing configuration. |
-| `preferences.copies` | Integer | Min 1, Max 99 (Default: 1) | Number of physical duplicate sets. |
-| `preferences.colorMode` | String (Enum) | `AUTO` \| `BW` \| `COLOR` | Heuristic page-color mix, Black & White, or Full Color. |
-| `preferences.sides` | String (Enum) | `SINGLE` \| `DOUBLE` | Single-sided vs. Duplex print. |
-| `preferences.pageRange` | String | String (`ALL` or e.g. `"1-10, 15"`) | Specific pages to be printed. |
-| `preferences.customerNotes`| String \| Null | Max 120 chars | Optional quick note (e.g., "Staple top-left"). |
-| `fileCount` | Integer | Min 1, Max 3 | Number of attached files in this session. |
-| `totalSizeBytes` | Integer | Max 78,643,200 (75 MB total) | Aggregate byte size of all files combined. |
-| `files` | Array<Map> | Length 1 to 3 | Detailed metadata of each file in the session. |
-| `files[].fileId` | String | `file_[a-z0-9]{8}` | Unique sub-identifier for the file. |
-| `files[].originalName` | String | Max 100 chars (sanitized) | Display name shown in UI (e.g., `"final_resume.pdf"`). |
-| `files[].storagePath` | String | Relative cloud storage path | `sessions/{sessionId}/{fileId}_{sanitizedName}`. |
-| `files[].sizeBytes` | Integer | Max 26,214,400 (25 MB) | Exact file size. |
-| `files[].mimeType` | String | Allowed MIME enum | `application/pdf`, `application/vnd.openxmlformats...`, `image/jpeg`, `image/png`. |
-| `files[].pageCount` | Integer \| Null | Nullable | Detected page count if available from pre-flight. |
-| `files[].colorPages` | Array<Integer> \| Null | 1-based page numbers, max 2000 | On-device PDF/image color-analysis result; advisory only. Missing means unavailable and is conservatively estimated as color. |
+Shop RPCs support create, lookup by ID/code/owner, directory listing and owner-checked rate updates. Server public projections omit owner identifiers, email, name and phone. Job creation captures the canonical shop identity and rate snapshot. The payment state machine uses UNPAID, PENDING_CONFIRMATION (customer report), PAID_ONLINE (operator-recorded UPI receipt) and PAID_COUNTER. No status represents an independently verified bank callback.
 
----
+Document bytes use `sessions/{sessionId}/{fileId}` in a private `zdrop-documents` Supabase bucket in the current billing-disabled deployment. Signed upload slots allow creation without upsert; confirmations inspect bytes and page counts. Provider upload-token expiry is independent of the job lifetime. `zdrop_orphaned_uploads` returns expired/unreferenced objects for deletion through the Storage API and never deletes storage rows directly. The optional Firebase adapter retains session-scoped upload grants and create-only Storage rules; metadata still uses Supabase. Do not enable paid Firebase Storage without approval.
 
-## 2. TypeScript Data Interfaces & Zod Validation Schemas
+Purges first block access, then delete bytes, then scrub files, notes and identity/shop details before publishing a terminal receipt. Storage errors keep the job blocked/purging and are retried. Deletion receipts are not proof of physical printer output or of copies outside ZDrop. Owner/operator capabilities remain for receipt access and retire an hour after the later of deletion/expiry.
 
-```typescript
-import { z } from 'zod';
-
-// Allowed MIME types
-export const AllowedMimeTypesEnum = z.enum([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/jpeg',
-  'image/png'
-]);
-
-// Print preferences schema
-export const PrintPreferencesSchema = z.object({
-  copies: z.number().int().min(1).max(99).default(1),
-  colorMode: z.enum(['BW', 'COLOR']).default('BW'),
-  sides: z.enum(['SINGLE', 'DOUBLE']).default('DOUBLE'),
-  pageRange: z.string().max(50).default('ALL'),
-  customerNotes: z.string().max(120).optional()
-});
-
-// File metadata schema
-export const FileMetadataSchema = z.object({
-  fileId: z.string(),
-  originalName: z.string().min(1).max(100),
-  storagePath: z.string(),
-  sizeBytes: z.number().int().max(25 * 1024 * 1024), // 25 MB max
-  mimeType: AllowedMimeTypesEnum,
-  pageCount: z.number().int().optional()
-});
-
-// Full session document schema
-export const SessionDocumentSchema = z.object({
-  id: z.string(),
-  accessCode: z.string().regex(/^[0-9]{6}$/, 'Must be a 6-digit numeric OTP'),
-  status: z.enum(['PENDING_UPLOAD', 'ACTIVE', 'ACCESSED', 'PRINTED', 'DELETED', 'EXPIRED']),
-  createdAt: z.date(),
-  expiresAt: z.date(),
-  accessedAt: z.date().nullable(),
-  deletedAt: z.date().nullable(),
-  deletionSource: z.enum(['OPERATOR_PRINT', 'STUDENT_REVOKE', 'TTL_PURGE']).nullable(),
-  preferences: PrintPreferencesSchema,
-  fileCount: z.number().int().min(1).max(3),
-  totalSizeBytes: z.number().int().max(75 * 1024 * 1024),
-  files: z.array(FileMetadataSchema).min(1).max(3)
-});
-
-export type PrintPreferences = z.infer<typeof PrintPreferencesSchema>;
-export type FileMetadata = z.infer<typeof FileMetadataSchema>;
-export type SessionDocument = z.infer<typeof SessionDocumentSchema>;
-```
-
----
-
-## 3. Database Indexes
-
-Firestore requires explicit composite indexes for multi-field queries executed by the kiosk lookup and background purge workers.
-
-### Index 1: Access Code Resolution Index
-```json
-{
-  "collectionGroup": "sessions",
-  "queryScope": "COLLECTION",
-  "fields": [
-    { "fieldPath": "accessCode", "order": "ASCENDING" },
-    { "fieldPath": "status", "order": "ASCENDING" }
-  ]
-}
-```
-*Purpose:* Enables rapid $O(1)$ lookup when the print shop operator submits an access code:
-`where('accessCode', '==', enteredCode).where('status', 'in', ['ACTIVE', 'ACCESSED'])`.
-
-### Index 2: Automated TTL Purge Index
-```json
-{
-  "collectionGroup": "sessions",
-  "queryScope": "COLLECTION",
-  "fields": [
-    { "fieldPath": "status", "order": "ASCENDING" },
-    { "fieldPath": "expiresAt", "order": "ASCENDING" }
-  ]
-}
-```
-*Purpose:* Allows the background cron worker to efficiently scan for expired documents:
-`where('status', 'in', ['ACTIVE', 'ACCESSED']).where('expiresAt', '<=', now)`.
-
----
-
-## 4. Cloud Storage Bucket Structure & Lifecycle Configuration
-
-### 4.1 Storage Path Hierarchy
-```text
-gs://<firebase-project-id>.firebasestorage.app/
-└── sessions/
-    └── ses_9f81a7b2-3c12-4d8e/
-        ├── file_a89f1021_assignment_math.pdf
-        ├── file_b312cc04_appendix_figures.png
-        └── file_c7891230_cover_page.pdf
-```
-
-### 4.2 GCS Object Lifecycle Management Fallback (`lifecycle.json`)
-Even if the application backend or cron worker temporarily fails, the Google Cloud Storage bucket natively enforces a hard auto-deletion policy:
-```json
-{
-  "lifecycle": {
-    "rule": [
-      {
-        "action": { "type": "Delete" },
-        "condition": {
-          "age": 1, 
-          "matchesPrefix": ["sessions/"]
-        }
-      }
-    ]
-  }
-}
-```
-*Note:* A Cloud Storage lifecycle rule is intended to remove orphaned temporary blobs older than 1 day. Verify the deployed rule before relying on it; this eventual cleanup is not zero-retention.
+Run `supabase/tests/*.sql` as transactional checks. They roll back synthetic rows. Run `npm run test:all` for isolated local production checks. See README for the minute Supabase cleanup job and Vault configuration; Vercel’s daily free cron alone does not satisfy short cleanup windows.

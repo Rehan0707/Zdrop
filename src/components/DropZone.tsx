@@ -13,6 +13,7 @@ interface DropZoneProps {
   maxFiles?: number;
   maxSizeMb?: number;
   disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
 }
 
 export function DropZone({
@@ -21,7 +22,11 @@ export function DropZone({
   maxFiles = 3,
   maxSizeMb = 25,
   disabled = false,
+  onBusyChange,
 }: DropZoneProps) {
+  const [analyzing, setAnalyzing] = useState(false);
+  const analyzingRef = useRef(false);
+  const locked = disabled || analyzing;
   const [isDragging, setIsDragging] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
@@ -31,7 +36,10 @@ export function DropZone({
   const maxSizeBytes = maxSizeMb * 1024 * 1024;
 
   const validateAndAddFiles = async (incomingFiles: FileList | File[]) => {
+    if (disabled || analyzingRef.current) return;
+    analyzingRef.current = true; setAnalyzing(true); onBusyChange?.(true);
     setErrorMessage(null);
+    try {
     const newFiles: FileMetadata[] = [...files];
 
     for (let i = 0; i < incomingFiles.length; i++) {
@@ -122,12 +130,14 @@ export function DropZone({
     }
 
     onFilesChange(newFiles);
-    setAnalysisMessage(null);
+    } finally {
+      analyzingRef.current = false; setAnalyzing(false); onBusyChange?.(false); setAnalysisMessage(null);
+    }
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (!disabled && files.length < maxFiles) {
+    if (!locked && files.length < maxFiles) {
       setIsDragging(true);
     }
   };
@@ -140,7 +150,7 @@ export function DropZone({
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    if (disabled || files.length >= maxFiles) return;
+    if (locked || files.length >= maxFiles) return;
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       validateAndAddFiles(e.dataTransfer.files);
     }
@@ -154,6 +164,7 @@ export function DropZone({
   };
 
   const handleRemove = (fileId: string) => {
+    if (locked) return;
     const removed = files.find((f) => f.fileId === fileId);
     if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
     const updated = files.filter((f) => f.fileId !== fileId);
@@ -176,17 +187,17 @@ export function DropZone({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           role="button"
-          tabIndex={disabled ? -1 : 0}
-          aria-disabled={disabled}
+          tabIndex={locked ? -1 : 0}
+          aria-disabled={locked}
           aria-label="Select documents"
           aria-describedby={descriptionId}
           onKeyDown={(event) => {
-            if (!disabled && (event.key === "Enter" || event.key === " ")) {
+            if (!locked && (event.key === "Enter" || event.key === " ")) {
               event.preventDefault();
               inputRef.current?.click();
             }
           }}
-          onClick={() => !disabled && inputRef.current?.click()}
+          onClick={() => !locked && inputRef.current?.click()}
         >
           <input
             ref={inputRef}
@@ -195,7 +206,7 @@ export function DropZone({
             accept=".pdf,.jpg,.jpeg,.png"
             onChange={handleFileSelect}
             className="hidden"
-            disabled={disabled}
+            disabled={locked}
             aria-label="Upload documents"
           />
           <span className="zd-upload-icon" aria-hidden="true">
@@ -225,7 +236,7 @@ export function DropZone({
               key={file.fileId}
               file={file}
               onRemove={handleRemove}
-              disabled={disabled}
+              disabled={locked}
             />
           ))}
         </div>

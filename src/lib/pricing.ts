@@ -96,11 +96,11 @@ export function calculatePrintCost(
     const physicalSheets = preferences.colorMode === "AUTO"
       ? (Math.ceil(colorPagesPerCopy / 2) + Math.ceil(bwPagesPerCopy / 2)) * copies
       : Math.ceil(effectivePagesPerCopy / 2) * copies;
-    discount = Math.min(subtotal - 1, physicalSheets * pricing.duplexDiscount);
+    discount = Math.min(Math.max(0, subtotal - 0.01), physicalSheets * pricing.duplexDiscount);
     discount = Math.round(discount * 100) / 100;
   }
 
-  const totalAmount = Math.max(1, Math.round((subtotal - discount) * 100) / 100);
+  const totalAmount = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
 
   const sym = pricing.currencySymbol || "₹";
   const sidesLabel = preferences.sides === "DOUBLE" ? " · 2-Sided" : "";

@@ -1,3 +1,5 @@
+> **Current implementation (2026-10-18):** This document retains the original product/design specification. Use [README](../README.md), [backend schema](BACKEND_SCHEMA.md) and [setup status](SETUP_STATUS.md) for the implemented Supabase persistence, operator-confirmed payments and one-time document-only automatic-purge printing. Historical Firestore, iframe, download and manual “mark printed” examples below are superseded.
+
 # ZDrop - Technical Requirements Document (TRD)
 
 > **Restricted printing update (2026-10-15):** Original downloads and signed read redirects are disabled. Operators receive server-rendered PNG pages; customers do not receive document URLs. PDF/image attachments print together in one temporary frame, then closing or cancelling the dialog triggers automatic deletion. Print-start blocks further retrieval and shortens expiry to two minutes for cleanup recovery. DOCX requires customer-side conversion to PDF; browser printing is limited to 100 selected pages. Screenshots, saving rendered pages and print-to-file cannot be prevented. See README for the current flow; older manual-purge examples below are historical.

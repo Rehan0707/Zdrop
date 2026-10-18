@@ -1,6 +1,9 @@
 import { FileMetadata, PrintPreferences, SessionData } from "./types";
 
 const tokens = new Map<string, string>();
+class ApiError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
 
 async function request(url: string, options?: RequestInit) {
   const controller = new AbortController();
@@ -19,7 +22,7 @@ async function request(url: string, options?: RequestInit) {
       result = { error: response.statusText || "Server communication error." };
     }
     if (!response.ok) {
-      throw new Error(result?.error || `Request failed (${response.status}).`);
+      throw new ApiError(result?.error || `Request failed (${response.status}).`, response.status);
     }
     return result;
   } catch (err: any) {
@@ -205,7 +208,7 @@ export async function finishPrintSession(id: string): Promise<SessionData> {
 
 export async function updateSessionPayment(
   id: string,
-  paymentStatus: "PAID_ONLINE" | "PAID_COUNTER" | "UNPAID",
+  paymentStatus: "PAID_ONLINE" | "PAID_COUNTER" | "PENDING_CONFIRMATION" | "UNPAID",
   paymentMethod: "UPI" | "CASH" | "COUNTER" = "COUNTER",
 ): Promise<SessionData> {
   const result = await request("/api/sessions/payment", {
@@ -222,21 +225,35 @@ export async function updateSessionPayment(
 export async function restoreSession(): Promise<SessionData | null> {
   const raw = sessionStorage.getItem("zdrop-session");
   if (!raw) return null;
+  let saved: { id: string; token: string };
   try {
-    const { id, token } = JSON.parse(raw);
-    tokens.set(id, token);
-    const r = await request(`/api/sessions/status?sessionId=${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!r?.session || ["DELETED", "EXPIRED"].includes(r.session.status)) {
-      sessionStorage.removeItem("zdrop-session");
-      return null;
-    }
-    return r.session;
+    saved = JSON.parse(raw);
+    if (!saved || typeof saved.id !== "string" || typeof saved.token !== "string") throw new Error();
   } catch {
     sessionStorage.removeItem("zdrop-session");
     return null;
   }
+  tokens.set(saved.id, saved.token);
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const r = await request(`/api/sessions/status?sessionId=${encodeURIComponent(saved.id)}`, {
+        headers: { Authorization: `Bearer ${saved.token}` },
+      });
+      if (!r?.session || ["DELETED", "EXPIRED"].includes(r.session.status)) {
+        sessionStorage.removeItem("zdrop-session");
+        return null;
+      }
+      return r.session;
+    } catch (error) {
+      if (error instanceof ApiError && [403, 404, 410].includes(error.status)) {
+        sessionStorage.removeItem("zdrop-session");
+        return null;
+      }
+      if (attempt === 3) throw new Error("Could not restore your print job. Refresh to retry; your recovery code is still stored in this tab.");
+      await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+    }
+  }
+  return null;
 }
 
 export function subscribeToSession(

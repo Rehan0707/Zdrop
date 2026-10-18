@@ -18,7 +18,8 @@ export async function createSupabaseUploadUrl(filePath: string): Promise<string>
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ upsert: true }),
+    // A previously issued upload capability must never overwrite confirmed bytes.
+    body: JSON.stringify({ upsert: false }),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`Supabase upload URL creation failed (${res.status})`);

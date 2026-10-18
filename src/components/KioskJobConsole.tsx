@@ -80,6 +80,8 @@ export function KioskJobConsole({
   const [paymentStatus, setPaymentStatus] = useState(
     session.paymentStatus || "UNPAID",
   );
+  const [paymentError, setPaymentError] = useState("");
+  useEffect(() => { setPaymentStatus(session.paymentStatus || "UNPAID"); }, [session.paymentStatus]);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState(false);
   const { preferences } = session;
 
@@ -91,13 +93,14 @@ export function KioskJobConsole({
       ? getColorPrintPlan(session.files, preferences.pageRange)
       : [];
 
-  const handleMarkPayment = async (status: "PAID_COUNTER" | "UNPAID") => {
+  const handleMarkPayment = async (status: "PAID_COUNTER" | "PAID_ONLINE" | "UNPAID") => {
     setIsUpdatingPayment(true);
+    setPaymentError("");
     try {
-      await updateSessionPayment(session.id, status, "CASH");
+      await updateSessionPayment(session.id, status, status === "PAID_ONLINE" ? "UPI" : "CASH");
       setPaymentStatus(status);
     } catch (e) {
-      console.error("Failed to update counter payment:", e);
+      setPaymentError((e as Error).message);
     } finally {
       setIsUpdatingPayment(false);
     }
@@ -381,6 +384,8 @@ export function KioskJobConsole({
             </div>
           )}
 
+          {paymentError && <p role="alert" className="zd-alert-danger">{paymentError}</p>}
+          {paymentStatus === "PENDING_CONFIRMATION" && <p role="status" className="zd-alert">Customer reports a UPI transfer. Check your bank account before confirming receipt.</p>}
           {/* Billing & Settlement Ledger Card */}
           <div className="zd-kiosk-billing-card">
             <div className="zd-kiosk-billing-header">
@@ -391,7 +396,7 @@ export function KioskJobConsole({
               {paymentStatus === "PAID_ONLINE" ? (
                 <span className="zd-payment-status-pill zd-payment-status-pill--paid">
                   <CheckCircle2 size={13} />
-                  <span>Paid via UPI Online</span>
+                  <span>UPI received · operator confirmed</span>
                 </span>
               ) : paymentStatus === "PAID_COUNTER" ? (
                 <span className="zd-payment-status-pill zd-payment-status-pill--paid">
@@ -425,8 +430,7 @@ export function KioskJobConsole({
               </div>
 
               <div className="zd-kiosk-billing-actions">
-                {paymentStatus !== "PAID_ONLINE" &&
-                  (paymentStatus === "PAID_COUNTER" ? (
+                {paymentStatus === "PAID_ONLINE" || paymentStatus === "PAID_COUNTER" ? (
                     <button
                       type="button"
                       onClick={() => handleMarkPayment("UNPAID")}
@@ -459,7 +463,8 @@ export function KioskJobConsole({
                         {estimate.totalAmount.toFixed(2)})
                       </span>
                     </button>
-                  ))}
+                  )}
+                {paymentStatus !== "PAID_ONLINE" && paymentStatus !== "PAID_COUNTER" && session.shopPricing?.upiId && <button type="button" onClick={() => handleMarkPayment("PAID_ONLINE")} disabled={isUpdatingPayment || busy} className="zd-button zd-button--secondary">Confirm UPI received</button>}
               </div>
             </div>
           </div>

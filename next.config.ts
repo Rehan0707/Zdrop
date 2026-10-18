@@ -10,9 +10,13 @@ const nextConfig: NextConfig = {
     "pdf-lib",
     "jszip",
     "@napi-rs/canvas",
+    "sharp",
   ],
   outputFileTracingIncludes: {
+    "/api/sessions/*": ["./node_modules/@napi-rs/canvas/**/*", "./node_modules/@napi-rs/canvas-*/**/*", "./node_modules/sharp/**/*", "./node_modules/@img/**/*"],
     "/api/print/*": [
+      "./node_modules/sharp/**/*",
+      "./node_modules/@img/**/*",
       "./node_modules/@napi-rs/canvas/**/*",
       "./node_modules/@napi-rs/canvas-*/**/*",
       "./node_modules/pdfjs-dist/legacy/build/*.mjs",

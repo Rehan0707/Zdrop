@@ -32,5 +32,5 @@ export function parseSelectedPages(pageRange: string, documentPages: number): nu
     if (!Number.isInteger(first) || !Number.isInteger(last) || first < 1 || last < first) continue;
     for (let page = first; page <= Math.min(last, pageCount); page++) selected.add(page);
   }
-  return selected.size ? [...selected].sort((a, b) => a - b) : Array.from({ length: pageCount }, (_, index) => index + 1);
+  return [...selected].sort((a, b) => a - b);
 }

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { registerShopOwnerUser, setAuthCookie } from '@/lib/server/auth';
-import { createShop, getShopByCode } from '@/lib/server/shops-store';
+import { readJsonBody, RequestError } from '@/lib/server/request';
+import { registerShopOwnerUser, rollbackShopRegistration, setAuthCookie } from '@/lib/server/auth';
+import { createShop, getShopByCode, getShopByOwnerId } from '@/lib/server/shops-store';
 import { z } from 'zod';
+import { rateLimit } from '@/lib/server/rate-limit';
 
 const RegisterShopSchema = z.object({
-  shopName: z.string().min(2, 'Shop name must be at least 2 characters').max(60),
-  ownerName: z.string().min(2, 'Owner name must be at least 2 characters').max(60),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  shopName: z.string().trim().min(2, 'Shop name must be at least 2 characters').max(60),
+  ownerName: z.string().trim().min(2, 'Owner name must be at least 2 characters').max(60),
+  email: z.string().trim().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(256),
   phone: z.string().min(7, 'Please enter a valid phone number').max(20),
   campusAddress: z.string().min(3, 'Please enter the shop address or service area').max(150),
   shopCode: z.string().min(3, 'Shop code must be at least 3 characters').max(20).optional(),
@@ -15,7 +17,8 @@ const RegisterShopSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const json = await request.json();
+    if (!await rateLimit(request, 'register')) return NextResponse.json({ error: 'Too many attempts. Please wait one minute.' }, { status: 429 });
+    const json = await readJsonBody(request);
     const parsed = RegisterShopSchema.safeParse(json);
     if (!parsed.success) {
       return NextResponse.json(
@@ -32,6 +35,7 @@ export async function POST(request: NextRequest) {
       .replace(/[^A-Z0-9]/g, '')
       .slice(0, 10);
 
+    if (cleanCode.length < 3) return NextResponse.json({ error: 'Choose a shop code with at least 3 letters or digits.' }, { status: 400 });
     const existingShop = await getShopByCode(cleanCode);
     if (existingShop) {
       return NextResponse.json(
@@ -56,6 +60,11 @@ export async function POST(request: NextRequest) {
       phone,
       campusAddress,
       shopCode: cleanCode,
+    }).catch(async error => {
+      const committed = await getShopByOwnerId(user.id);
+      if (committed) return committed;
+      await rollbackShopRegistration(user).catch(() => console.error('Shop registration rollback needs administrator review.'));
+      throw error;
     });
 
     user.shopId = shop.id;
@@ -64,6 +73,7 @@ export async function POST(request: NextRequest) {
     setAuthCookie(user, response.headers);
     return response;
   } catch (err) {
+    if (err instanceof RequestError) return NextResponse.json({ error: err.message }, { status: err.status });
     return NextResponse.json(
       { error: (err as Error).message || 'Failed to create shop account' },
       { status: 400 }

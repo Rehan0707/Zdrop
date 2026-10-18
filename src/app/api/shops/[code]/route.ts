@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getShopByCode } from '@/lib/server/shops-store';
+import { getShopByCode, publicShop } from '@/lib/server/shops-store';
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
     if (!shop) {
       return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
     }
-    return NextResponse.json({ shop });
+    return NextResponse.json({ shop: publicShop(shop) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

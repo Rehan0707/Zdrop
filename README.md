@@ -1,88 +1,61 @@
 # ZDrop
 
-Temporary document handoff for customers using print and copy shops. Customers upload up to three PDF, JPG, or PNG files (25 MiB each), choose print preferences, and share a six-digit code or ZDrop job QR. Shop operators open `/kiosk` to retrieve, preview, print, and delete the job.
-
-## Product scope
-
-ZDrop serves customers who need to print personal, work, or study documents at a participating print or copy shop. The kiosk camera reads ZDrop job QR codes only. Physical document scanners, ID-card capture, scan-to-phone, and other scanner integrations are out of scope. The existing on-device PDF and image page-color estimate is a software check, not document capture.
+Temporary document handoff to print shops: select PDF/JPG/PNG files, choose print settings, share a six-digit code or job QR, then print and automatically delete ZDrop’s copy. Up to three files, 25 MiB each and 100 selected pages per print job.
 
 ## Run locally
 
-Node.js 20 or later:
+Use Node.js 20.9 or later and npm:
 
 ```sh
 npm ci
 cp .env.example .env.local
-npm run dev -- --hostname 0.0.0.0
+npm run dev
 ```
 
-Open http://localhost:3000. Phones on the same network can use the computer's LAN address and port 3000. The kiosk camera QR reader requires HTTPS or localhost; manual code entry works over LAN HTTP. Local mode stores real document bytes in `.zdrop-data`, outside public assets and excluded from Git. Use persistent disk and one server instance. Local development uses a shared rate-limit bucket unless a trusted reverse proxy is configured.
+`ZDROP_STORAGE=local` keeps documents and shop accounts in ignored `.zdrop-data`. Use one server on persistent disk. Google sign-in requires the Firebase public configuration and authorized domain; the underlying capability API also supports anonymous sessions. Never expose `.zdrop-data` as static assets.
 
 ```sh
 npm run typecheck
-npm run build
-npm run start
-ZDROP_TEST_URL=http://localhost:3000 node scripts/smoke-test.mjs
+npm run test:all
 ```
 
-## Firebase and Vercel setup
+`test:all` copies source into a disposable directory, excludes every env file and existing customer data, checks types, builds production, verifies native print assets, runs the full API suite and tests managed mode with simulated hardware. It removes its own temporary data afterward. The individual `test:*` API scripts require a running **local disposable** server, with `ZDROP_TEST_URL` and matching working directory/data location. Edge and station API tests deliberately change test-session expiry; never run them against customer data.
 
-1. Create a Firebase project with the **default** Firestore database, Firebase Authentication, and a Cloud Storage bucket. Enable the required billing plan for Storage and scheduled deployment.
-2. Create a server service account with Firestore, Storage, and Firebase Auth administration permissions. Set `ZDROP_STORAGE=firebase`, `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`, and `FIREBASE_WEB_API_KEY`. Private keys may contain escaped newlines. Alternatively use Application Default Credentials with token-signing permissions. The web API key identifies the project and is safe to send to the browser; the private key is server-only.
-3. Configure Firebase Authentication's authorized domains for the deployed hostname. Customers sign in with Google before creating a job; the print shop receives the temporary job details, not the customer's Google profile. File uploads use a separate session-scoped custom identity held in browser memory and cleared during cleanup.
-4. Deploy the rules and indexes using Firebase CLI: `firebase deploy --only firestore:rules,firestore:indexes,storage`. When prompted, enable Storage rules' access to Firestore. Storage allows only creation of reserved files with exact size/type, authenticated as the session uploader, before sealing, revocation, or expiry. Public reads and client updates/deletes are denied. Firestore client access is denied; status is fetched through capability-protected API polling.
-5. Set independent long random `CRON_SECRET` and `RATE_LIMIT_SECRET` values. Vercel configuration schedules `/api/cron/purge-expired` every minute and supplies `CRON_SECRET` as a bearer token. Use a Vercel plan that supports per-minute schedules, or an external scheduler with that authorization header. GET and POST are supported.
-6. Apply the fallback lifecycle: `gcloud storage buckets update gs://YOUR_BUCKET --lifecycle-file=storage.lifecycle.json`. This deletes orphaned session objects older than one day; it supplements the minute scheduler. Disable object soft delete/versioning/retention if your deployment requires file contents to be physically removed rather than recoverable by administrators: `gcloud storage buckets update gs://YOUR_BUCKET --clear-soft-delete --no-versioning`. Review existing retention policies in the cloud console before launch.
-7. Deploy on Vercel with those environment variables. Local storage mode intentionally refuses to run on Vercel. Firebase uploads go directly through `uploadBytesResumable`, so file bytes do not traverse Vercel request bodies. Kiosk page rendering reads document bytes on the server; original document downloads and signed read redirects are disabled.
+## Hosted setup
 
-Official references: [Admin setup](https://firebase.google.com/docs/admin/setup), [custom tokens](https://firebase.google.com/docs/auth/admin/create-custom-tokens), [Storage rules](https://firebase.google.com/docs/storage/security).
+Current hosting uses the existing free Vercel project, Supabase PostgreSQL metadata and a private Supabase Storage bucket. Firebase supplies Google sign-in. **Keep Firebase billing disabled.** Firebase Storage remains an optional adapter requiring separate billing approval; no paid Firebase deployment is needed for the current setup. See [verified setup status](docs/SETUP_STATUS.md).
 
-## Lifecycle and privacy
+1. Use the intended existing Supabase project. Apply `supabase/migrations/*.sql` in filename order as the database owner. The base metadata migration is included; later migrations add shops, atomic print start, pricing and upload cleanup. These migrations preserve existing records. Check SQL output before continuing. Run the transactional tests in `supabase/tests`; they roll back synthetic records.
+2. Create a **private** bucket named `zdrop-documents`. Apply the upload cleanup migration after creating it to enforce the 25 MiB/type restrictions. Do not add client read/list/update/delete policies. Originals are accessible only to the server.
+3. Configure server-only `SUPABASE_URL`, either `SUPABASE_SECRET_KEY` or the legacy `SUPABASE_SERVICE_ROLE_KEY`, `ZDROP_STORAGE=supabase`, `RATE_LIMIT_SECRET`, `CRON_SECRET` and `ZDROP_AUTH_SECRET`. Use independent long random secrets. Keep local values in ignored `.env.local`; use hosting environment settings in production. Never prefix privileged keys with `NEXT_PUBLIC_`. Hosted failures must remain failures; shop metadata and passwords never fall back to ephemeral disk.
+4. Configure the `NEXT_PUBLIC_FIREBASE_*` values shown in `.env.example`, enable Google in Firebase Auth, and authorize the deployed hostname. Public Firebase configuration is not a privileged credential. A real Google sign-in requires the user to complete Google’s UI; tests only verify token rejection/server verification behavior.
+5. Configure frequent cleanup. Vercel Hobby’s daily cron in `vercel.json` is only a fallback. For the existing free Supabase project, save the matching production `CRON_SECRET` in **Integrations → Vault → Secrets**, named `zdrop_cleanup_secret`, then run `supabase/cleanup-schedule.sql`. Do not paste secret values into SQL queries or Git. The one-minute job calls the protected app endpoint using Vault. Verify both `cron.job_run_details` **and** `net._http_response`: queued HTTP work alone does not prove cleanup succeeded. A healthy endpoint returns 200 with `failed: 0`; deletion failures return 503 and are retried.
+6. Build and verify an isolated deployment before assigning the public domain. A Git push alone does not prove deployment. Keep service-role functions inaccessible to `anon` and `authenticated`; all table access remains server-only.
 
-Code reservation uses cryptographic randomness and an atomic Firestore transaction (exclusive creation on local disk). The upload phase expires after 15 minutes; successful confirmation starts the 15-minute printing deadline and renews the code reservation. Confirmation seals cloud writes, verifies byte counts and formats, and detects PDF page counts. Invalid/password-protected PDFs and invalid Office containers are rejected and purged. PDF page counts are shown when known; Customers must convert DOCX to PDF before restricted printing.
+Official setup references: [Supabase Cron](https://supabase.com/docs/guides/cron), [Vault scheduling](https://supabase.com/docs/guides/functions/schedule-functions), [Vercel Hobby cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
 
-Deletion first disables cloud uploads, deletes file bytes, then publishes the deletion receipt. Interrupted purges remain blocked and are retried by session requests and the scheduler. Operations use Firestore leases or local locks; stale local locks recover after five minutes. Files become inaccessible at the deadline. Physical cloud cleanup normally follows within the scheduler interval; no website can guarantee deletion at the exact millisecond during infrastructure outages. Local cleanup runs every five seconds while the server is running.
+## Customer and shop flows
 
-Receipts contain no filenames or notes. Session records, capabilities, and reserved codes are removed an hour after both the deadline and deletion, preserving short-lived status receipts. Cloud rate limiting stores only keyed hashes with expiring counters; configure Firestore TTL for the `rateLimits.deleteAfter` field using the included field override. Only configure `ZDROP_TRUST_PROXY=true` if your reverse proxy overwrites forwarded headers; Vercel's trusted forwarding header is used automatically.
+The landing form reads page counts and advisory color estimates locally. It disables submission during analysis to prevent incomplete settings or removed files reappearing. Customer settings include copies, color, duplex, notes and a page range across **all attachments in order**. A range outside the document selects no pages and cannot silently print everything.
 
-Browser status polling retries after network interruption. The owner capability is kept in sessionStorage for refresh recovery. Documents disable caching and are not embedded in localStorage. A six-digit code grants access to anyone who knows it; share it only with the intended operator.
+The server reserves a six-digit code atomically, issues session-scoped upload slots, checks actual formats/sizes/page counts and activates a 15-minute session. File URLs and customer identity never appear in operator responses. Session capabilities protect status, revoke and print actions; owner recovery uses sessionStorage and survives transient connection failures.
 
-## Restricted browser printing
+Shop owners can register and sign in, create their counter QR and save rates/UPI settings. Only the actual owner can change a shop’s rates. Public shop listings omit owner identifiers, email, name and phone. The server verifies the selected shop and captures its rates/payment destination for the job; later price edits do not alter an existing quote.
 
-Original PDF, image and Office downloads are disabled. Customer/owner responses contain no file URLs. The legacy `/api/files` route always denies downloads; it no longer redirects to signed cloud URLs. Only an operator capability can call `POST /api/print/page`, which renders a PDF page or image on the server and returns a no-store PNG. This keeps original PDF/Office bytes and their selectable text out of the kiosk. Keep storage buckets private; do not publish object URLs or configure public read access.
+UPI links/QRs pay the **configured shop**, with no placeholder merchant. UPI is offered only with an INR destination. A customer can report a transfer as **awaiting shop confirmation**; only the operator records receipt after checking their bank or taking cash. ZDrop has no bank webhook/payment gateway and does not independently verify money movement. Color estimates and totals remain advisory; confirm the final bill at the counter.
 
-The kiosk prepares all selected pages from every PDF/image attachment in a temporary document-only print surface. Print CSS hides the entire app and exposes only those page images; navigation, billing, filenames, shop controls and ZDrop branding never enter the document layout. The app adds no watermark. Native page printing without a prepared job cannot print the dashboard; the intentional shop QR poster retains its separate layout. This avoids Safari falling back to an enclosing page when printing a hidden iframe. Turn off browser headers and footers in the print dialog; those are browser-generated decorations.
+## Printing and deletion
 
-One **Print job & auto-delete** action opens the native printer dialog after an explicit warning. Closing the dialog—including cancellation—clears the browser's temporary preview/print objects and calls an idempotent server purge. There is no manual “mark printed” step. Copies, color and duplex still need to be applied in the native dialog; the selected page range is already included in the prepared job. The browser reports an attempt ending, not successful physical printing.
+`/api/files` always denies original downloads. Only the operator can request server-rendered, no-store PNG pages. PDF text/original bytes are never delivered to the browser. The print packet contains selected page images only; the app adds no watermark or billing/navigation content. Turn off browser-generated headers/footers in the native dialog.
 
-Starting the print window is atomic: further page requests and repeated code resolution are blocked, and the existing session deadline is shortened to at most two minutes. If the tab disappears or a browser fails to emit `afterprint`, normal local cleanup or the deployed scheduler purges the files at that deadline. Keep the scheduler configured in cloud deployments; physical deletion cannot be guaranteed while infrastructure is unavailable. Failed storage deletion keeps the session blocked/purging and is retried, rather than returning a successful deletion receipt.
+**Print job & auto-delete** starts one atomic print window, blocks further page retrieval/code resolution and shortens expiry to at most two minutes. Closing the dialog, including Cancel, clears temporary page objects and triggers automatic purge. Cancellation requires re-uploading. Copies/color/duplex must still be set in the browser’s native dialog. No browser event proves physical paper output.
 
-For hosted metadata, apply `supabase/migrations/202610160001_begin_print.sql` before deploying this flow. The service-role-only `zdrop_begin_print` function validates the lease and immutable session fields, rejects replay, and chooses the shortened deadline atomically. Ordinary `zdrop_save_session` calls retain their expiry guard. The migration creates one function and does not drop tables or overwrite session data. `supabase/tests/begin_print.sql` tests the transition in a transaction that rolls back all synthetic records.
+Revocation and expiry also purge. Failed storage deletion leaves access blocked and cleanup pending; it never publishes a false deletion receipt. Local cleanup runs every five seconds while the server runs. Cloud requests enforce expiry immediately, and the minute scheduler retries storage removal. Outages or paused free services can delay physical cleanup. Anonymous status receipts/codes retire an hour after the later of deletion and expiry; personal profile/shop details, files and notes are scrubbed on purge.
 
-Restricted printing supports PDF/JPG/PNG and at most 100 selected pages per job. Rasterization can affect fine print fidelity; verify the actual printer before use. Legacy/API DOCX uploads remain valid, but the upload form rejects new DOCX selections and they cannot be downloaded or printed here: the customer must convert them to PDF on their own device and upload again. No external conversion service or paid resource is configured.
+Supabase signed upload tokens have a provider-controlled lifetime separate from the session and cannot be individually revoked. Slots disable upsert so confirmed originals cannot be overwritten. Cleanup also finds late uploads to deleted/expired/orphaned slots and removes them through the Storage API; no raw SQL deletion of storage objects is used. This does not promise exact-millisecond erasure or removal of provider backups.
 
-This is a browser restriction, not DRM. Rendered pages can still be captured through screenshots, developer tools, operating-system print-to-file, or printer spooling. The website cannot prevent saving all copies, silently choose a physical printer, or verify paper output. Those requirements need a trusted managed print agent, OS/printer policies, and printer completion integration. ZDrop cannot restrict copies of originals already held on the customer's own device.
+Restricted browser printing supports PDF/JPG/PNG; legacy API DOCX uploads cannot be printed or downloaded and must be converted to PDF on the customer’s device. Rasterization can affect fine text and image quality. A browser cannot block screenshots, developer tools, Save as PDF, OS spooling or copies retained by the printer.
 
-The optional Auto color estimate is advisory. Review customer settings and page-color estimates before starting the one-time print job.
+For stronger restrictions, the optional macOS/Linux [managed print station](docs/MANAGED_PRINT_STATION.md) submits in-memory raster jobs to a configured CUPS printer with copies/color/duplex, then purges. Set `ZDROP_PRINT_MODE=managed` only on a dedicated deployment with a configured station and independent `ZDROP_STATION_KEY`. This administrator-run pilot requires OS/printer lockdown; Windows, multi-shop station enrollment and physical-printer completion tracking are not implemented. No printer hardware is available for acceptance testing.
 
-## Optional managed print station
-
-For a dedicated trusted station, `ZDROP_PRINT_MODE=managed` blocks browser document pages and browser printing on the server. A separate macOS/Linux CUPS tool claims a code, prepares raster pages in memory and submits directly to one configured printer with copies/color/duplex settings, then automatically purges the ZDrop source. It does not open a Save as PDF dialog. The default remains browser mode; no printer or OS policy is configured automatically. This is an administrator-run pilot, not an installed locked-down appliance. Windows and multi-shop station registration are not implemented. See [station setup and physical acceptance](docs/MANAGED_PRINT_STATION.md) before enabling it.
-
-Run `npm run test:station` for hardware-free tests and `npm run station:test-sheet` to create a synthetic printer test PDF. No physical printer results are claimed.
-
-## Requirements
-
-The implementation follows `docs/PRD.md`, `docs/TRD.md`, `docs/APP_FLOW.md`, `docs/BACKEND_SCHEMA.md`, and `docs/UI_UX_DESIGN.md`. Customer uploads, structured preferences, code reservation, ZDrop job QR display/reading, real file previews, live status, refresh recovery, revoke/print deletion, expiry cleanup, resumable cloud uploads, rate limits, and lifecycle recovery are implemented. Physical document scanning, ID capture, scan-to-phone, automated payment processing, and hardware print-driver integration are not included in the MVP.
-
-Deployment credentials and actual printer hardware are environment-specific. A live Firebase project and printer need acceptance testing after configuration; local testing does not prove live cloud permissions or physical print fidelity.
-
-## Verification
-
-Earlier sources passed TypeScript and a production Next.js build in a clean checkout. API tests passed byte upload/download, capability authorization, confirmation, operator resolution, revocation, and deletion. Local edge tests verified real PDF page counts, expiry of ACCESSED sessions with physical file removal, stale-lock recovery, interrupted-purge recovery, invalid PDF rejection, cron authorization, and request throttling. A three-file JPG/PNG/DOCX test also passed upload, response types, native Office download, and deletion of all attachments. The dependency audit reported zero known vulnerabilities.
-
-Playwright browser checks verified mobile upload and print preferences, code and QR display, a separate kiosk tab with PDF preview and the same preferences, explicit deletion confirmation, and the customer's live deletion receipt. Production pages had no browser-console errors, code entry fit 320px without horizontal overflow, and camera permission denial preserved manual entry. Actual camera hardware, physical printers, and a live Firebase project remain environment acceptance checks; no credentials were available, and the local Firebase emulator also requires a Java runtime that is not installed here.
-
-Run `npm run test:api` and `npm run test:formats` against a running local server. `npm run test:edge` is a local-only test: run it from the same directory as the local server because it changes test-session expiry and lock files in `.zdrop-data`. Set `ZDROP_TEST_URL` if using a different port. Edge tests intentionally reach the one-minute lookup rate limit.
-
-Run `npm run test:print` against the local server from the same working directory. It verifies rendered PDF text, operator-only access, blocked originals, atomic one-time print start, idempotent cleanup, expired print attempts, DOCX rejection, and storage deletion failure/recovery. It uses disposable local test data and fake storage credentials for the isolated cloud failure test. Browser checks can simulate a closed/cancelled print dialog; actual printer completion remains outside the browser contract.
+AI/OCR, general document conversion, automated bank verification and physical scanners are future features; the app does not pretend to provide them. See [backend schema](docs/BACKEND_SCHEMA.md) for current persistence and [setup status](docs/SETUP_STATUS.md) for verified cloud checks.

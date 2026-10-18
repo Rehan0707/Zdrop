@@ -4,6 +4,7 @@ import { PDFDocument } from "pdf-lib";
 import { printAtStation, stationClient } from "./station/client.mjs";
 const base = process.env.ZDROP_TEST_URL || "http://localhost:3103";
 const key = process.env.ZDROP_STATION_KEY;
+const dataRoot = process.env.ZDROP_DATA_DIR || ".zdrop-data";
 assert.ok(key?.length >= 32, "Use a disposable managed-mode server and station key.");
 const pdf = await PDFDocument.create();
 pdf.addPage([300, 400]).drawText("Station page one", { x: 20, y: 350, size: 15 });
@@ -61,7 +62,7 @@ const finished = await station({ action: "finish", ...ref, outcome: "SPOOLED" })
 assert.equal(finished.session.status, "DELETED");
 assert.equal(finished.session.printSubmission, "SPOOLED");
 await station({ action: "finish", ...ref, outcome: "SPOOLED" });
-await assert.rejects(access(`.zdrop-data/${job.sessionId}/${owner.session.files[0].fileId}`));
+await assert.rejects(access(`${dataRoot}/${job.sessionId}/${owner.session.files[0].fileId}`));
 for (const outcome of ["CANCELLED", "FAILED"]) {
   const owner = await ready();
   const job = await station({ action: "claim", code: owner.session.accessCode });
@@ -75,12 +76,12 @@ await action("delete", revoked.token, { sessionId: revoked.session.id });
 await station({ action: "authorize-submit", sessionId: revokedJob.sessionId, claim: revokedJob.claim }, 410);
 const expired = await ready();
 const expiredJob = await station({ action: "claim", code: expired.session.accessCode });
-const path = `.zdrop-data/${expiredJob.sessionId}/session.json`;
+const path = `${dataRoot}/${expiredJob.sessionId}/session.json`;
 const metadata = JSON.parse(await readFile(path, "utf8"));
 metadata.expiresAt = Date.now() - 1;
 await writeFile(path, JSON.stringify(metadata));
 await station({ action: "authorize-submit", sessionId: expiredJob.sessionId, claim: expiredJob.claim }, 410);
-await assert.rejects(access(`.zdrop-data/${expiredJob.sessionId}/${expired.session.files[0].fileId}`));
+await assert.rejects(access(`${dataRoot}/${expiredJob.sessionId}/${expired.session.files[0].fileId}`));
 // Exercise the actual station client against real rendering/deletion, fake hardware only.
 const endToEnd = await ready();
 let submitted = 0;
@@ -100,5 +101,5 @@ await printAtStation({
   },
 });
 assert.equal(submitted, 1);
-await assert.rejects(access(`.zdrop-data/${endToEnd.session.id}/${endToEnd.session.files[0].fileId}`));
+await assert.rejects(access(`${dataRoot}/${endToEnd.session.id}/${endToEnd.session.files[0].fileId}`));
 console.log("PASS: managed API rejects browser access, atomic claims, secret redaction, one-time pages/submission, expiry/revocation, idempotent purge and physical local-byte removal.");

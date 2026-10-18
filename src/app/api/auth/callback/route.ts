@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { setAuthCookie } from '@/lib/server/auth';
+import { safeRedirectTarget } from '@/lib/server/request';
 import { UserProfile } from '@/lib/types';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://wrxqpmsimbimoxgmdpel.supabase.co';
@@ -8,7 +9,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SER
 export async function GET(request: NextRequest) {
   const url = request.nextUrl;
   const code = url.searchParams.get('code');
-  const redirectTarget = url.searchParams.get('redirect') || '/';
+  const redirectTarget = safeRedirectTarget(url.searchParams.get('redirect'), url.origin);
   const errorDesc = url.searchParams.get('error_description') || url.searchParams.get('error');
 
   if (errorDesc) {
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
           body: JSON.stringify({ accessToken })
         });
         if (res.ok) {
-          window.location.href = ${JSON.stringify(redirectTarget)};
+          window.location.href = ${JSON.stringify(redirectTarget).replace(/</g, '\\u003c')};
           return;
         }
       }
@@ -88,6 +89,6 @@ export async function GET(request: NextRequest) {
 </html>`;
 
   return new NextResponse(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
   });
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, ShieldCheck, Zap } from "lucide-react";
 import { FileMetadata, PrintPreferences, PrintPreferencesSchema } from "@/lib/types";
+import { printPages } from "@/lib/print-policy";
 import { DropZone } from "@/components/DropZone";
 import { PrintPreferencesCard } from "@/components/PrintPreferencesCard";
 
@@ -13,6 +14,7 @@ interface UploadViewProps {
 }
 
 export function UploadView({ onGenerateCode, isGenerating = false, uploadProgress = 0 }: UploadViewProps) {
+  const [analyzing, setAnalyzing] = useState(false);
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [preferences, setPreferences] = useState<PrintPreferences>({
     copies: 1,
@@ -22,7 +24,11 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
   });
 
   const validation = PrintPreferencesSchema.safeParse(preferences);
-  const canSubmit = files.length > 0 && validation.success;
+  let printProblem = "";
+  if (files.length && !analyzing && validation.success) {
+    try { printPages(files, preferences); } catch (error) { printProblem = (error as Error).message; }
+  }
+  const canSubmit = files.length > 0 && !analyzing && validation.success && !printProblem;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +58,7 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block font-mono">
             Step 1: Select Documents
           </label>
-          <DropZone files={files} onFilesChange={setFiles} disabled={isGenerating} />
+          <DropZone files={files} onFilesChange={setFiles} onBusyChange={setAnalyzing} disabled={isGenerating} />
         </div>
 
         {/* Print Preferences (shows when at least 1 file added) */}
@@ -70,7 +76,8 @@ export function UploadView({ onGenerateCode, isGenerating = false, uploadProgres
           </div>
         )}
 
-        {!validation.success && <p role="alert" className="text-sm text-red-700">{validation.error.issues[0].message}</p>}
+        {printProblem && <p role="alert" className="zd-alert">{printProblem}</p>}
+            {!validation.success && <p role="alert" className="text-sm text-red-700">{validation.error.issues[0].message}</p>}
         {/* Submit Bar */}
         <div className="space-y-2 pt-2">
           <button
